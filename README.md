@@ -28,12 +28,6 @@ npm install -g @shopify/cli@latest
 
 _If you are on MacOS or linux, you may need to add "sudo" in front of the above command._
 
-### Setup
-
-```shell
-shopify app init --template=https://github.com/Shopify/shopify-app-template-react-router
-```
-
 ### Local Development
 
 ```shell
