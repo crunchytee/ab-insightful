@@ -1,37 +1,22 @@
-export default function AdditionalPage() {
+export default function ExperimentManagement() {
+  // this file represents the route for /experiments/create, as needed by ET-20. The "Create Experiment" button navigates to this route, and shows the page defined by this file.  
   return (
-    <s-page heading="Additional page">
-      <s-section heading="Multiple pages">
-        <s-paragraph>
-          The app template comes with an additional page which demonstrates how
-          to create multiple pages within app navigation using{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/tools/app-bridge"
-            target="_blank"
-          >
-            App Bridge
-          </s-link>
-          .
-        </s-paragraph>
-        <s-paragraph>
-          To create your own page and have it show up in the app navigation, add
-          a page inside <code>app/routes</code>, and a link to it in the{" "}
-          <code>&lt;ui-nav-menu&gt;</code> component found in{" "}
-          <code>app/routes/app.jsx</code>.
-        </s-paragraph>
-      </s-section>
-      <s-section slot="aside" heading="Resources">
-        <s-unordered-list>
-          <s-list-item>
-            <s-link
-              href="https://shopify.dev/docs/apps/design-guidelines/navigation#app-nav"
-              target="_blank"
-            >
-              App nav best practices
-            </s-link>
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
+    <s-page heading="Experiment Management">
+      <s-stack>
+              <s-section heading="Experiment List">
+          <s-grid justifyItems="center">
+            <s-box  maxInlineSize="266px" maxBlockSize="266px">
+              <s-image src="public\Group-182.svg"></s-image>
+            </s-box>
+          </s-grid>
+          <s-stack alignItems="center">
+            <s-heading>Your experiments will show here</s-heading>
+            <s-paragraph> This is where you will examine and select from your list of experiments</s-paragraph>
+            <s-button href="/app/experiments/new" variant="primary">Create Experiment</s-button>
+          </s-stack>
+        </s-section>
+      </s-stack>
+
     </s-page>
   );
 }
