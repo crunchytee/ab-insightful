@@ -1,15 +1,10 @@
 # Shopify App Template - React Router
 
-AN EDIT
-This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using [React Router](https://reactrouter.com/).  It was forked from the [Shopify Remix app template](https://github.com/Shopify/shopify-app-template-remix) and converted to React Router.
+This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using [React Router](https://reactrouter.com/). It was forked from the [Shopify Remix app template](https://github.com/Shopify/shopify-app-template-remix) and converted to React Router.
 
 Rather than cloning this repo, follow the [Quick Start steps](https://github.com/Shopify/shopify-app-template-react-router#quick-start).
 
 Visit the [`shopify.dev` documentation](https://shopify.dev/docs/api/shopify-app-react-router) for more details on the React Router app package.
-
-## Upgrading from Remix
-
-If you have an existing Remix app that you want to upgrade to React Router, please follow the [upgrade guide](https://github.com/Shopify/shopify-app-template-react-router/wiki/Upgrading-from-Remix).  Otherwise, please follow the quick start guide below.
 
 ## Quick start
 
@@ -17,8 +12,8 @@ If you have an existing Remix app that you want to upgrade to React Router, plea
 
 Before you begin, you'll need the following:
 
-1. **Node.js**: [Download and install](https://nodejs.org/en/download/) it if you haven't already.
-2. **Shopify Partner Account**: [Create an account](https://partners.shopify.com/signup) if you don't have one.
+1. **Node.js**: [Download and install](https://nodejs.org/en/download/) it if you haven't already. Be sure to select your OS, and use "nvm" with "npm" as the last two options.
+2. **Shopify Partner Account**: Please contact admins if you do not have access to your account.
 3. **Test Store**: Set up either a [development store](https://help.shopify.com/en/partners/dashboard/development-stores#create-a-development-store) or a [Shopify Plus sandbox store](https://help.shopify.com/en/partners/dashboard/managing-stores/plus-sandbox-store) for testing your app.
 4. **Shopify CLI**: [Download and install](https://shopify.dev/docs/apps/tools/cli/getting-started) it if you haven't already.
 
@@ -26,10 +21,75 @@ Before you begin, you'll need the following:
 npm install -g @shopify/cli@latest
 ```
 
+_If you are on MacOS or linux, you may need to add "sudo" in front of the above command._
+
+5. **PostgreSQL**: [Download and install](https://www.postgresql.org/download/) it if you haven't already.
+
 ### Setup
+
+#### First, set up the Shopify app
+
+Before starting, ensure your working directory is the project root (you are inside the folder ab_insightful and can see all the files downloaded from github)
 
 ```shell
 shopify app init --template=https://github.com/Shopify/shopify-app-template-react-router
+```
+
+instructions for AB Insightful dev team members:
+
+- You may be instructed to open a new window and log in to Shopify. Follow the prompts, log in, and confirm the code on the screen.
+- When prompted to select an organization, select your Tosh's Web Services
+- When prompted to create or connect to an existing app, **connect it to an existing app**
+- When prompted to select that app, select "ab-insightful"
+
+#### Next, set up the database
+
+_This part requires that postgresql is installed and usable, and you know your postgres username and password. Please refer to the postgresql installation instructions if you have any issues with the below commands._
+
+On Windows, using pgAdmin (which is installed with windows):
+
+- Right-click “Login/Group Roles” → Create → Login/Group Role
+- Set the name (e.g., myuser)
+- Under “Definition”, set a password
+- Under “Privileges”, grant Can login? and optionally Create DB
+- Then create a database:
+- Right-click “Databases” → Create → Database
+- Set name (e.g., mydb)
+- Set the owner to myuser
+
+On Mac, run
+
+```shell
+createdb ab_insightful
+```
+
+Common issues include not having postgres running, and not having a database created called ab_insightful. If you run in to any of these issues, please resolve them before continuing.
+
+#### Configure environment variables
+
+Next, we need to tell the app about the database. create a file called ".env" at the root of your project directory. Inside it, put the following information, where username and password are the username and password set for your database:
+
+```shell
+# PostgreSQL Database URL
+DATABASE_URL="postgresql://username:password@localhost:5432/ab_insightful?schema=public"
+```
+
+#### Test that everything is working
+
+To test that everything is working, we need to run the app, and test the database.
+
+First, let's test the database:
+
+```shell
+npx prisma studio
+```
+
+This should open up a window in your browser that shows a table.
+
+Now, run the app!
+
+```shell
+shopify app dev
 ```
 
 ### Local Development
@@ -80,9 +140,9 @@ Please read the [documentation for @shopify/shopify-app-react-router](https://sh
 
 ## Shopify Dev MCP
 
-This template is configured with the Shopify Dev MCP. This instructs [Cursor](https://cursor.com/), [GitHub Copilot](https://github.com/features/copilot) and [Claude Code](https://claude.com/product/claude-code) and [Google Gemini CLI](https://github.com/google-gemini/gemini-cli) to use the Shopify Dev MCP.  
+This template is configured with the Shopify Dev MCP. This instructs [Cursor](https://cursor.com/), [GitHub Copilot](https://github.com/features/copilot) and [Claude Code](https://claude.com/product/claude-code) and [Google Gemini CLI](https://github.com/google-gemini/gemini-cli) to use the Shopify Dev MCP.
 
-For more information on the Shopify Dev MCP please read [the  documentation](https://shopify.dev/docs/apps/build/devmcp).
+For more information on the Shopify Dev MCP please read [the documentation](https://shopify.dev/docs/apps/build/devmcp).
 
 ## Deployment
 
@@ -95,8 +155,8 @@ This use of SQLite works in production if your app runs as a single instance.
 The database that works best for you depends on the data your app needs and how it is queried.
 Here’s a short list of databases providers that provide a free tier to get started:
 
-| Database   | Type             | Hosters                                                                                                                                                                                                                               |
-| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database   | Type             | Hosters                                                                                                                                                                                                                                    |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | MySQL      | SQL              | [Digital Ocean](https://www.digitalocean.com/products/managed-databases-mysql), [Planet Scale](https://planetscale.com/), [Amazon Aurora](https://aws.amazon.com/rds/aurora/), [Google Cloud SQL](https://cloud.google.com/sql/docs/mysql) |
 | PostgreSQL | SQL              | [Digital Ocean](https://www.digitalocean.com/products/managed-databases-postgresql), [Amazon Aurora](https://aws.amazon.com/rds/aurora/), [Google Cloud SQL](https://cloud.google.com/sql/docs/postgres)                                   |
 | Redis      | Key-value        | [Digital Ocean](https://www.digitalocean.com/products/managed-databases-redis), [Amazon MemoryDB](https://aws.amazon.com/memorydb/)                                                                                                        |
@@ -156,9 +216,9 @@ This only applies if your app is embedded, which it will be by default.
 
 ### Webhooks: shop-specific webhook subscriptions aren't updated
 
-If you are registering webhooks in the `afterAuth` hook, using `shopify.registerWebhooks`, you may find that your subscriptions aren't being updated.  
+If you are registering webhooks in the `afterAuth` hook, using `shopify.registerWebhooks`, you may find that your subscriptions aren't being updated.
 
-Instead of using the `afterAuth` hook declare app-specific webhooks in the `shopify.app.toml` file.  This approach is easier since Shopify will automatically sync changes every time you run `deploy` (e.g: `npm run deploy`).  Please read these guides to understand more:
+Instead of using the `afterAuth` hook declare app-specific webhooks in the `shopify.app.toml` file. This approach is easier since Shopify will automatically sync changes every time you run `deploy` (e.g: `npm run deploy`). Please read these guides to understand more:
 
 1. [app-specific vs shop-specific webhooks](https://shopify.dev/docs/apps/build/webhooks/subscribe#app-specific-subscriptions)
 2. [Create a subscription tutorial](https://shopify.dev/docs/apps/build/webhooks/subscribe/get-started?deliveryMethod=https)
@@ -172,13 +232,13 @@ During normal development, the app won't need to re-authenticate most of the tim
 
 ### Webhooks: Admin created webhook failing HMAC validation
 
-Webhooks subscriptions created in the [Shopify admin](https://help.shopify.com/en/manual/orders/notifications/webhooks) will fail HMAC validation. This is because the webhook payload is not signed with your app's secret key.  
+Webhooks subscriptions created in the [Shopify admin](https://help.shopify.com/en/manual/orders/notifications/webhooks) will fail HMAC validation. This is because the webhook payload is not signed with your app's secret key.
 
-The recommended solution is to use [app-specific webhooks](https://shopify.dev/docs/apps/build/webhooks/subscribe#app-specific-subscriptions) defined in your toml file instead.  Test your webhooks by triggering events manually in the Shopify admin(e.g. Updating the product title to trigger a `PRODUCTS_UPDATE`).
+The recommended solution is to use [app-specific webhooks](https://shopify.dev/docs/apps/build/webhooks/subscribe#app-specific-subscriptions) defined in your toml file instead. Test your webhooks by triggering events manually in the Shopify admin(e.g. Updating the product title to trigger a `PRODUCTS_UPDATE`).
 
 ### Webhooks: Admin object undefined on webhook events triggered by the CLI
 
-When you trigger a webhook event using the Shopify CLI, the `admin` object will be `undefined`. This is because the CLI triggers an event with a valid, but non-existent, shop. The `admin` object is only available when the webhook is triggered by a shop that has installed the app.  This is expected.
+When you trigger a webhook event using the Shopify CLI, the `admin` object will be `undefined`. This is because the CLI triggers an event with a valid, but non-existent, shop. The `admin` object is only available when the webhook is triggered by a shop that has installed the app. This is expected.
 
 Webhooks triggered by the CLI are intended for initial experimentation testing of your webhook configuration. For more information on how to test your webhooks, see the [Shopify CLI documentation](https://shopify.dev/docs/apps/tools/cli/commands#webhook-trigger).
 
@@ -193,13 +253,13 @@ If so, please update [.graphqlrc.ts](https://github.com/Shopify/shopify-app-temp
 
 ### Using Defer & await for streaming responses
 
-By default the CLI uses a cloudflare tunnel. Unfortunately  cloudflare tunnels wait for the Response stream to finish, then sends one chunk.  This will not affect production.
+By default the CLI uses a cloudflare tunnel. Unfortunately cloudflare tunnels wait for the Response stream to finish, then sends one chunk. This will not affect production.
 
 To test [streaming using await](https://reactrouter.com/api/components/Await#await) during local development we recommend [localhost based development](https://shopify.dev/docs/apps/build/cli-for-apps/networking-options#localhost-based-development).
 
 ### "nbf" claim timestamp check failed
 
-This is because a JWT token is expired.  If you  are consistently getting this error, it could be that the clock on your machine is not in sync with the server.  To fix this ensure you have enabled "Set time and date automatically" in the "Date and Time" settings on your computer.
+This is because a JWT token is expired. If you are consistently getting this error, it could be that the clock on your machine is not in sync with the server. To fix this ensure you have enabled "Set time and date automatically" in the "Date and Time" settings on your computer.
 
 ### Using MongoDB and Prisma
 
