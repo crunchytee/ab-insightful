@@ -1,3 +1,8 @@
+IF YOU ARE READING THIS, YOU ARE ON A DEAD BRANCH. MOVE BACK TO MAIN OR YOUR FEATURE BRANCH.
+THIS BRANCH IS DEAD ON PURPOSE. TOSH AND RYAN WANT TO KEEP THIS ALIVE IN CASE WE NEED TO MIGRATE BACK TO POSTGRES IN THE FUTURE. 
+
+
+
 # Shopify App Template - React Router
 
 This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using [React Router](https://reactrouter.com/). It was forked from the [Shopify Remix app template](https://github.com/Shopify/shopify-app-template-remix) and converted to React Router.
