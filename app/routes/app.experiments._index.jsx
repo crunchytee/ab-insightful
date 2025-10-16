@@ -1,8 +1,6 @@
-export default function ExperimentManagement() {
-  // this file represents the route for /experiments/create, as needed by ET-20. The "Create Experiment" button navigates to this route, and shows the page defined by this file.  
-  return (
-    <s-page heading="Experiment Management">
-      <s-section accessibilityLabel="Empty state section">
+export default function Experimentsindex (){
+    return (
+        <s-section accessibilityLabel="Empty state section">
         <s-grid gap="base" justifyItems="center" paddingBlock="large-500">
           <s-box maxInlineSize="400px" maxBlockSize="400px">
             <s-image
@@ -17,13 +15,11 @@ export default function ExperimentManagement() {
               <s-paragraph>
                 This is where you will examine and select from your list of experiments. 
               </s-paragraph>
-                            <s-button variant="primary">Create Experiment</s-button>
+                            <s-button variant="primary" href="/app/experiments/new">Create Experiment</s-button>
             </s-stack>
               
           </s-grid>
         </s-grid>
       </s-section>
-
-    </s-page>
-  );
+    );
 }
