@@ -3,11 +3,14 @@ import db from "../db.server";
 
 // Function to create an experiment. Returns the created experiment object.
 export async function createExperiment(experiment) {
-  return await db.experiment.create({
+  console.log('Creating experiment with data:', experiment);
+  const result = await db.experiment.create({
     data: {
       ...experiment,
     },
   });
+  console.log('Created experiment:', result);
+  return result;
 }
 
 // Function to get an experiment by id. Returns the experiment object if found, otherwise returns null.

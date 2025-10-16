@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher } from "react-router";
+import { useState } from "react";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -8,24 +9,33 @@ export const action = async ({ request }) => {
 
   // Get POST request form data & create experiment
   const formData = await request.formData();
+  const description = formData.get("description");
   const { createExperiment } = await import("../services/experiment.server");
-  const experiment = await createExperiment();
+  const experiment = await createExperiment({description});
   return { experiment };
 };
 
 // Client side code
 export default function CreateExperiment() {
   const fetcher = useFetcher();
+  const [description, setDescription] = useState("");
 
   const handleExperimentCreate = async () => {
-    await fetcher.submit({}, { method: "POST" });
+    await fetcher.submit({description}, { method: "POST" });
   };
 
   return (
     <s-page heading="Create Experiment">
       <s-section>
-        <s-paragraph>A filler card</s-paragraph>
+        <s-form>
+        <s-text-area
+              label="Experiment Description"
+              placeholder="Add a detailed description of your experiment"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
         <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
+        </s-form>
       </s-section>
     </s-page>
   );

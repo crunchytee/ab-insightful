@@ -34,4 +34,5 @@ model Session {
 // Experiment Model
 model Experiment {
   id Int @id @default(autoincrement())
+  description String? 
 }
