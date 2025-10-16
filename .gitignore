@@ -10,7 +10,7 @@ node_modules
 /prisma/dev.sqlite-journal
 .vscode
 database.sqlite
-
+.vscode
 .env
 .env.*
 
