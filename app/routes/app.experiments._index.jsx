@@ -15,9 +15,15 @@ export async function loader() {
 export default function Experimentsindex() {
   // Get list of experiments
   const experiments = useLoaderData();
-
-  return (
-    <s-section accessibilityLabel="Empty state section">
+  if(experiments!= {}){
+    return (
+      <s-section heading="Experiments">
+        <s-paragraph>Placeholder UI elements to denote when there are experiments</s-paragraph>
+      </s-section>
+    );
+  }else{
+      return (
+    <s-section heading="Experiments">
       <s-grid gap="base" justifyItems="center" paddingBlock="large-500">
         <s-box maxInlineSize="400px" maxBlockSize="400px">
           <s-image
@@ -40,5 +46,7 @@ export default function Experimentsindex() {
         </s-grid>
       </s-grid>
     </s-section>
-  );
+      );
+}
+
 }
