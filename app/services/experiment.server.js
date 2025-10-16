@@ -12,10 +12,23 @@ export async function createExperiment(experiment) {
 
 // Function to get an experiment by id. Returns the experiment object if found, otherwise returns null.
 export async function getExperimentById(id) {
-  const experiment = await db.experiment.findUnique({
-    where: {
-      id: id,
-    },
-  });
-  return experiment;
+  if (id) {
+    const experiment = await db.experiment.findUnique({
+      where: {
+        id: id,
+      },
+    });
+    return experiment;
+  }
+  return null;
+}
+
+// Function to get experiments list. This does not return the entire experiment, just the parts that are needed on the experiment list page.
+// Returns null if empty
+export async function getExperimentsList() {
+  const experiments = await db.experiment.findMany();
+  if (experiments) {
+    return experiments;
+  }
+  return null;
 }
