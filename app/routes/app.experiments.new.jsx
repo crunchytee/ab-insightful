@@ -1,5 +1,5 @@
 import { authenticate } from "../shopify.server";
-import { useFetcher } from "react-router";
+import { useFetcher, redirect } from "react-router";
 import { useState } from "react";
 
 // Server side code
@@ -16,8 +16,8 @@ export const action = async ({ request }) => {
 
   const { createExperiment } = await import("../services/experiment.server");
   // Eventually will pass all fields needed for new experiment
-  const experiment = await createExperiment({description});
-  return { experiment };
+  const experiment = await createExperiment({description.trim()});
+  return redirect(`/app/experiments/${experiment.id}`);
 };
 
 // Client side code
