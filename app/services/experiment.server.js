@@ -2,11 +2,12 @@
 import db from "../db.server";
 
 // Function to create an experiment. Returns the created experiment object.
-export async function createExperiment(experiment) {
-  console.log('Creating experiment with data:', experiment);
+export async function createExperiment(experimentData) {
+  console.log('Creating experiment with data:', experimentData);
+  // Update Prisma database using npx prisma 
   const result = await db.experiment.create({
     data: {
-      ...experiment,
+      ...experimentData, // Will include all DB fields of a new experiment
     },
   });
   console.log('Created experiment:', result);

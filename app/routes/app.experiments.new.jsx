@@ -8,9 +8,10 @@ export const action = async ({ request }) => {
   await authenticate.admin(request);
 
   // Get POST request form data & create experiment
-  const formData = await request.formData();
+  const formData = await request.formData(); 
   const description = formData.get("description");
   const { createExperiment } = await import("../services/experiment.server");
+  // Eventually will pass all fields needed for new experiment
   const experiment = await createExperiment({description});
   return { experiment };
 };
@@ -32,7 +33,8 @@ export default function CreateExperiment() {
               label="Experiment Description"
               placeholder="Add a detailed description of your experiment"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              // Known as a controlled component, the value is tied to {description} state
+              onChange={(e) => setDescription(e.target.value)} 
             />
         <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
         </s-form>
