@@ -19,7 +19,7 @@ export default function ExperimentManagement() {
               </s-paragraph>
                             <s-button variant="primary">Create Experiment</s-button>
             </s-stack>
-              <s-button >Create Experiment</s-button>
+              
           </s-grid>
         </s-grid>
       </s-section>
