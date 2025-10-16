@@ -1,4 +1,3 @@
-// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -13,6 +12,7 @@ datasource db {
   url      = "file:dev.sqlite"
 }
 
+// Session model for Shopify authentication
 model Session {
   id            String    @id
   shop          String
@@ -29,4 +29,9 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
+}
+
+// Experiment Model
+model Experiment {
+  id Int @id @default(autoincrement())
 }
