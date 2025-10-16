@@ -10,6 +10,10 @@ export const action = async ({ request }) => {
   // Get POST request form data & create experiment
   const formData = await request.formData(); 
   const description = formData.get("description");
+  if (!description || description.trim() === "") {
+    return {error: "Description is required"};
+  }
+
   const { createExperiment } = await import("../services/experiment.server");
   // Eventually will pass all fields needed for new experiment
   const experiment = await createExperiment({description});
@@ -25,6 +29,8 @@ export default function CreateExperiment() {
     await fetcher.submit({description}, { method: "POST" });
   };
 
+  const error = fetcher.data?.error; // Fetches error from server side
+
   return (
     <s-page heading="Create Experiment">
       <s-section>
@@ -36,6 +42,7 @@ export default function CreateExperiment() {
               // Known as a controlled component, the value is tied to {description} state
               onChange={(e) => setDescription(e.target.value)} 
             />
+            {error && <s-paragraph tone="critical">{error}</s-paragraph>}
         <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
         </s-form>
       </s-section>
