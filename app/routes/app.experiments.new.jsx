@@ -1,5 +1,5 @@
 import { authenticate } from "../shopify.server";
-import { useFetcher } from "react-router";
+import { useFetcher, redirect } from "react-router";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -10,7 +10,7 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const { createExperiment } = await import("../services/experiment.server");
   const experiment = await createExperiment();
-  return { experiment };
+  return redirect(`/app/experiments/${experiment.id}`);
 };
 
 // Client side code
