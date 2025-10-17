@@ -16,7 +16,7 @@ export const action = async ({ request }) => {
 
   const { createExperiment } = await import("../services/experiment.server");
   // Eventually will pass all fields needed for new experiment
-  const experiment = await createExperiment({description.trim()});
+  const experiment = await createExperiment({description: description.trim()});
   return redirect(`/app/experiments/${experiment.id}`);
 };
 
