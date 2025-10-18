@@ -33,6 +33,7 @@ export default function CreateExperiment() {
 
   return (
     <s-page heading="Create Experiment">
+      <s-button slot="primary-action" variant="primary">Save Draft</s-button>
       <s-section>
         <s-form>
         <s-text-area
