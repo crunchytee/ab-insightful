@@ -89,7 +89,7 @@ export default function Index() {
   }, [fetcher.data?.product?.id, shopify]);
   const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
-  return (git 
+  return (
     <s-page heading="Shopify app template">
       <s-button slot="primary-action" onClick={generateProduct}>
         Generate a product
