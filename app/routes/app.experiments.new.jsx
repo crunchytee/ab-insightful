@@ -47,6 +47,7 @@ export default function CreateExperiment() {
   const [emptyNameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
+  const [experimentChance, setExperimentChance] = useState(50);
 
   const handleExperimentCreate = async () => {
 
@@ -150,6 +151,23 @@ export default function CreateExperiment() {
               handleDateChange(e.target.value)}}
             details="Experiment ends at 11:59pm" />
         </s-form>
+      </s-section>
+      
+      <s-section heading="Experiment Details">
+        <s-form>
+            <s-number-field
+              label="Chance to show experiment"
+              value={experimentChance}
+              onChange={(e) => {
+                const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                setExperimentChance(value);
+              }}
+              min={0}
+              max={100}
+              step={1}
+              suffix="%"
+            />
+          </s-form>
       </s-section>
     </s-page>
   );
