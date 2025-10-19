@@ -1,7 +1,8 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Text } from '@shopify/polaris';
+import { Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from "react";
+import React from 'react';
 
 // Server side code
 export const action = async ({ request }) => {
@@ -128,10 +129,6 @@ export default function CreateExperiment() {
                 />
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
             </s-form>
-            <s-stack direction="inline" gap="base">
-              <s-button onclick="window.location.reload()">Discard</s-button>
-              <s-button variant="primary" onClick={handleExperimentCreate}>Save experiment</s-button>
-            </s-stack>
           </s-stack>
         </s-box>
       </s-section>
@@ -169,6 +166,10 @@ export default function CreateExperiment() {
             />
           </s-form>
       </s-section>
+      <s-stack direction="inline" gap="base">
+        <s-button onclick="window.location.reload()">Discard</s-button>
+        <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
+      </s-stack>
     </s-page>
   );
 }
