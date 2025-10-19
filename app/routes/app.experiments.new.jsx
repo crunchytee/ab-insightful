@@ -88,6 +88,8 @@ export default function CreateExperiment() {
   
   return (
     <s-page heading="Create Experiment" variant="headingLg">
+      <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
+      <s-button slot="secondary-actions" onclick="window.location.reload()">Discard</s-button>
       <s-section>
 
         {/*Name Portion of code */}
@@ -125,7 +127,10 @@ export default function CreateExperiment() {
                 />
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
             </s-form>
-            <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
+            <s-stack direction="inline" gap="base">
+              <s-button onclick="window.location.reload()">Discard</s-button>
+              <s-button variant="primary" onClick={handleExperimentCreate}>Save experiment</s-button>
+            </s-stack>
           </s-stack>
         </s-box>
       </s-section>
