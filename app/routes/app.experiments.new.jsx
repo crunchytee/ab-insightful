@@ -1,6 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -24,16 +24,32 @@ export const action = async ({ request }) => {
 export default function CreateExperiment() {
   const fetcher = useFetcher();
   const [description, setDescription] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [dateError, setDateError] = useState("");
+
 
   const handleExperimentCreate = async () => {
     await fetcher.submit({description}, { method: "POST" });
   };
 
+  // validating picked dates, throws error for past dates
+  const handleDateChange = useCallback(
+    (date) => {
+      //pull current date and normalize both date inputs to compare
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0,0,0,0);
+      const isValid = selectedDate > today;
+      setDateError(isValid ? "" : "Date must be in the future");
+    }, [setDateError]
+  );
+
   const error = fetcher.data?.error; // Fetches error from server side
 
   return (
     <s-page heading="Create Experiment">
-      <s-button slot="primary-action" variant="primary">Save Draft</s-button>
+      <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
       <s-section>
         <s-form>
         <s-text-area
@@ -45,6 +61,23 @@ export default function CreateExperiment() {
             />
             {error && <s-paragraph tone="critical">{error}</s-paragraph>}
         <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
+        </s-form>
+      </s-section>
+
+      <s-section heading="Active Dates">
+        <s-form>
+          <s-date-field
+            //end date field options
+            id="endDateField"
+            label="End Date" 
+            placeholder="Select end date"
+            allow={"today--"}
+            error={dateError}
+            required //this requires end date to be filled
+            onChange={(e) => { //listens and passes picked time to validate
+              setEndDate(e.target.value)
+              handleDateChange(e.target.value)}}
+            details="Experiment ends at 11:59pm" />
         </s-form>
       </s-section>
     </s-page>
