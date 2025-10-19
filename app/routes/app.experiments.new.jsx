@@ -48,14 +48,14 @@ export default function CreateExperiment() {
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
+  const [goalSelected, setGoalSelected] = useState("");
+
 
   const handleExperimentCreate = async () => {
 
     //asynchronous submittal of experiment info in the text fields
     await fetcher.submit({description, name}, { method: "POST" });
   }; // end CreateExperiment()
-
-  
 
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
@@ -80,6 +80,12 @@ export default function CreateExperiment() {
       const isValid = selectedDate > today;
       setDateError(isValid ? "" : "Date must be in the future");
     }, [setDateError]
+  );
+
+  //End condition list handler
+  const handleEndCondition = useCallback(
+    (value) => setGoalSelected(value),
+    [],
   );
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
@@ -136,20 +142,32 @@ export default function CreateExperiment() {
         </s-box>
       </s-section>
 
+      {/*Active dates/end conditions portion of code */}
       <s-section heading="Active Dates">
         <s-form>
-          <s-date-field
-            //end date field options
-            id="endDateField"
-            label="End Date" 
-            placeholder="Select end date"
-            allow={"today--"}
-            error={dateError}
-            required //this requires end date to be filled
-            onChange={(e) => { //listens and passes picked time to validate
-              setEndDate(e.target.value)
-              handleDateChange(e.target.value)}}
-            details="Experiment ends at 11:59pm" />
+          <s-stack direction="block" gap="base">
+            <s-choice-list
+              label="End condition"
+              name="endCondition"
+              onChange={handleEndCondition}>
+                <s-choice value="Manual" defaultSelected>Manual</s-choice>
+                <s-choice value="End date">End date</s-choice>
+                <s-choice value="Stable success probability">Stable success probability</s-choice>
+            </s-choice-list>
+
+            <s-date-field
+              //end date field options
+              id="endDateField"
+              label="End Date" 
+              placeholder="Select end date"
+              allow={"today--"}
+              error={dateError}
+              required //this requires end date to be filled
+              onChange={(e) => { //listens and passes picked time to validate
+                setEndDate(e.target.value)
+                handleDateChange(e.target.value)}}
+              details="Experiment ends at 11:59pm" />
+            </s-stack>
         </s-form>
       </s-section>
       
