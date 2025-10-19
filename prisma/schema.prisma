@@ -34,6 +34,5 @@ model Session {
 // Experiment Model
 model Experiment {
   id Int @id @default(autoincrement())
-  name String?
   description String? // once on PostgreSql, use @db.VarChar(500) for max length
 }
