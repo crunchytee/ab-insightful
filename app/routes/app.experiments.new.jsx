@@ -50,6 +50,7 @@ export default function CreateExperiment() {
   return (
     <s-page heading="Create Experiment">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
+      <s-button slot="secondary-actions" onclick="window.location.reload()">Discard</s-button>
       <s-section>
         <s-form>
         <s-text-area
@@ -60,7 +61,10 @@ export default function CreateExperiment() {
               onChange={(e) => setDescription(e.target.value)} 
             />
             {error && <s-paragraph tone="critical">{error}</s-paragraph>}
-        <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
+        <s-stack direction="inline" gap="base">
+          <s-button onclick="window.location.reload()">Discard</s-button>
+          <s-button variant="primary" onClick={handleExperimentCreate}>Save experiment</s-button>
+        </s-stack>
         </s-form>
       </s-section>
 
