@@ -1,7 +1,7 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { useState } from "react";
 import { Text } from '@shopify/polaris';
+import { useState, useCallback, useEffect } from "react";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -45,6 +45,8 @@ export default function CreateExperiment() {
   const [name, setName] = useState("") 
   const [description, setDescription] = useState("");
   const [emptyNameError, setNameError] = useState(null)
+  const [endDate, setEndDate] = useState("");
+  const [dateError, setDateError] = useState("");
 
   const handleExperimentCreate = async () => {
 
@@ -66,13 +68,27 @@ export default function CreateExperiment() {
 
   
   //if fetcher data exists, add this otherwise undefined.
+  // validating picked dates, throws error for past dates
+  const handleDateChange = useCallback(
+    (date) => {
+      //pull current date and normalize both date inputs to compare
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0,0,0,0);
+      const isValid = selectedDate > today;
+      setDateError(isValid ? "" : "Date must be in the future");
+    }, [setDateError]
+  );
+
+  const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
 
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
   
   return (
     <s-page heading="Create Experiment" variant="headingLg">
-      <s-section >
+      <s-section>
 
         {/*Name Portion of code */}
         <s-box padding="base">
@@ -112,6 +128,23 @@ export default function CreateExperiment() {
             <s-button onClick={handleExperimentCreate}>Save experiment</s-button>
           </s-stack>
         </s-box>
+      </s-section>
+
+      <s-section heading="Active Dates">
+        <s-form>
+          <s-date-field
+            //end date field options
+            id="endDateField"
+            label="End Date" 
+            placeholder="Select end date"
+            allow={"today--"}
+            error={dateError}
+            required //this requires end date to be filled
+            onChange={(e) => { //listens and passes picked time to validate
+              setEndDate(e.target.value)
+              handleDateChange(e.target.value)}}
+            details="Experiment ends at 11:59pm" />
+        </s-form>
       </s-section>
     </s-page>
   );
