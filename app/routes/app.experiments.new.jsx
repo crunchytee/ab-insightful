@@ -1,8 +1,7 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Text } from '@shopify/polaris';
+import { Select, Text } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from "react";
-
 // Server side code
 export const action = async ({ request }) => {
   // Authenticate request
@@ -54,7 +53,15 @@ export default function CreateExperiment() {
     await fetcher.submit({description, name}, { method: "POST" });
   }; // end CreateExperiment()
 
-  
+  const [selected, setSelected] = useState('view-page');
+
+  const handleSelectChange = useCallback(
+    (value) => setSelected(value),
+    [],
+  );
+
+  const [icon, setIcon] = useState("") 
+
 
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
@@ -85,7 +92,9 @@ export default function CreateExperiment() {
 
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
-  
+ 
+
+ 
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
@@ -126,7 +135,19 @@ export default function CreateExperiment() {
                   onChange={(e) => setDescription(e.target.value)} 
                 />
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
+                
             </s-form>
+            <s-select label="Experiment Goal" icon="sort" defaultSelected={selected === "view-page"} >
+              <s-option value="view-page" >Viewed Page</s-option>
+              <s-option value="start-checkout">Started Checkout</s-option>
+              <s-option value="add-product">Added Product to Cart</s-option>
+              <s-option value="complete-checkout">Completed Checkout</s-option>
+              onChange = { (e) => {
+                const value = e.target.value;
+                setSelected(value);
+              }}
+            </s-select>
+    
             <s-stack direction="inline" gap="base">
               <s-button onclick="window.location.reload()">Discard</s-button>
               <s-button variant="primary" onClick={handleExperimentCreate}>Save experiment</s-button>
