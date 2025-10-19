@@ -10,7 +10,7 @@ export const action = async ({ request }) => {
 
   // Get POST request form data & create experiment
   const formData = await request.formData();
-  const name = (formData.get("name") || "").trim() || "Unnamed experiment";
+  const name = (formData.get("name") || "").trim();
   const description = (formData.get("description") || "").trim();
 
   //storage for future errors that may be configured for the fields
@@ -85,7 +85,7 @@ export default function CreateExperiment() {
             <s-form>
               <s-text-field
                   label="Experiment Name"
-                  placeholder="Add experiment name here"
+                  placeholder="Unnamed Experiment"
                   value={name}
                   //Event handler callback to set value
                   onChange={(e) => {
