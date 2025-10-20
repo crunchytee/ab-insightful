@@ -13,6 +13,7 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const name = (formData.get("name") || "").trim();
   const description = (formData.get("description") || "").trim();
+  const sectionId = (formData.get("sectionId") || "").trim();
 
   //storage for future errors that may be configured for the fields
   const errors = {}; // will be length 0 when there are no errors
@@ -28,7 +29,7 @@ export const action = async ({ request }) => {
 
   // will pass the data used for the new experiment (currently a single variable)
   const experiment = await createExperiment({
-    description: description.trim()
+    description: description
 
   });
 
@@ -45,6 +46,7 @@ export default function CreateExperiment() {
   //state variables (special variables that remember across re-renders (e.g. user input, counters))
   const [name, setName] = useState("") 
   const [description, setDescription] = useState("");
+  const [sectionId, setSectionId] = useState("");
   const [emptyNameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
@@ -55,7 +57,7 @@ export default function CreateExperiment() {
   const handleExperimentCreate = async () => {
 
     //asynchronous submittal of experiment info in the text fields
-    await fetcher.submit({description, name}, { method: "POST" });
+    await fetcher.submit({description, name, sectionId}, { method: "POST" });
   }; // end CreateExperiment()
 
   const handleSelectChange = useCallback(
@@ -193,6 +195,26 @@ export default function CreateExperiment() {
       
       <s-section heading="Experiment Details">
         <s-form>
+          <s-stack direction="block" gap="base">
+            <s-stack direction="block" gap="small">
+              {/*Custom Label Row (SectionID + help link)*/}
+              <s-stack direction="inline" align="baseline" gap="large">
+                <s-box flex-grow="1">
+                  <s-text as="p" variant="bodyMd" font-weight="medium">
+                    Section ID to be tested
+                  </s-text>
+                </s-box>
+                <s-link href="#" target="_blank"> 
+                  How do I find my section?
+                </s-link>
+              </s-stack>
+          <s-text-field
+            placeholder="shopify-section-sections--25210977943842__header"
+            value={sectionId}
+            onChange={(e) => setSectionId(e.target.value)}
+            details="The associated Shopify section ID to be tested. Must be visible on production site"
+          />
+          </s-stack>
             <s-number-field
               label="Chance to show experiment"
               value={experimentChance}
@@ -205,6 +227,7 @@ export default function CreateExperiment() {
               step={1}
               suffix="%"
             />
+          </s-stack>
           </s-form>
       </s-section>
       <s-stack direction="inline" gap="base">
