@@ -1,7 +1,9 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Select, Text } from '@shopify/polaris';
+import { Select, Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from "react";
+import React from 'react';
+
 // Server side code
 export const action = async ({ request }) => {
   // Authenticate request
@@ -46,6 +48,9 @@ export default function CreateExperiment() {
   const [emptyNameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
+  const [experimentChance, setExperimentChance] = useState(50);
+  const [goalSelected, setGoalSelected] = useState("");
+
 
   const handleExperimentCreate = async () => {
 
@@ -61,8 +66,6 @@ export default function CreateExperiment() {
   );
 
   const [icon, setIcon] = useState("") 
-
-
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
     if (!name.trim()) {
@@ -86,6 +89,12 @@ export default function CreateExperiment() {
       const isValid = selectedDate > today;
       setDateError(isValid ? "" : "Date must be in the future");
     }, [setDateError]
+  );
+
+  //End condition list handler
+  const handleEndCondition = useCallback(
+    (value) => setGoalSelected(value),
+    [],
   );
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
@@ -137,17 +146,20 @@ export default function CreateExperiment() {
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
                 
             </s-form>
-            <s-select label="Experiment Goal" icon="sort" defaultSelected={selected === "view-page"} >
+            <s-select 
+                 label="Experiment Goal" 
+                 icon="sort" 
+                 defaultSelected={selected === "view-page"}
+                 onChange = { (e) => {
+                   const value = e.target.value;
+                   setSelected(value);
+              }}
+            >
               <s-option value="view-page" >Viewed Page</s-option>
               <s-option value="start-checkout">Started Checkout</s-option>
               <s-option value="add-product">Added Product to Cart</s-option>
               <s-option value="complete-checkout">Completed Checkout</s-option>
-              onChange = { (e) => {
-                const value = e.target.value;
-                setSelected(value);
-              }}
             </s-select>
-    
             <s-stack direction="inline" gap="base">
               <s-button onclick="window.location.reload()">Discard</s-button>
               <s-button variant="primary" onClick={handleExperimentCreate}>Save experiment</s-button>
@@ -156,22 +168,55 @@ export default function CreateExperiment() {
         </s-box>
       </s-section>
 
+      {/*Active dates/end conditions portion of code */}
       <s-section heading="Active Dates">
         <s-form>
-          <s-date-field
-            //end date field options
-            id="endDateField"
-            label="End Date" 
-            placeholder="Select end date"
-            allow={"today--"}
-            error={dateError}
-            required //this requires end date to be filled
-            onChange={(e) => { //listens and passes picked time to validate
-              setEndDate(e.target.value)
-              handleDateChange(e.target.value)}}
-            details="Experiment ends at 11:59pm" />
+          <s-stack direction="block" gap="base">
+            <s-choice-list
+              label="End condition"
+              name="endCondition"
+              onChange={handleEndCondition}>
+                <s-choice value="Manual" defaultSelected>Manual</s-choice>
+                <s-choice value="End date">End date</s-choice>
+                <s-choice value="Stable success probability">Stable success probability</s-choice>
+            </s-choice-list>
+
+            <s-date-field
+              //end date field options
+              id="endDateField"
+              label="End Date" 
+              placeholder="Select end date"
+              allow={"today--"}
+              error={dateError}
+              required //this requires end date to be filled
+              onChange={(e) => { //listens and passes picked time to validate
+                setEndDate(e.target.value)
+                handleDateChange(e.target.value)}}
+              details="Experiment ends at 11:59pm" />
+            </s-stack>
         </s-form>
       </s-section>
+      
+      <s-section heading="Experiment Details">
+        <s-form>
+            <s-number-field
+              label="Chance to show experiment"
+              value={experimentChance}
+              onChange={(e) => {
+                const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                setExperimentChance(value);
+              }}
+              min={0}
+              max={100}
+              step={1}
+              suffix="%"
+            />
+          </s-form>
+      </s-section>
+      <s-stack direction="inline" gap="base">
+        <s-button onclick="window.location.reload()">Discard</s-button>
+        <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
+      </s-stack>
     </s-page>
   );
 }
