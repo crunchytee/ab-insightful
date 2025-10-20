@@ -1,7 +1,9 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Select, Text } from '@shopify/polaris';
+import { Select, Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from "react";
+import React from 'react';
+
 // Server side code
 export const action = async ({ request }) => {
   // Authenticate request
@@ -46,14 +48,15 @@ export default function CreateExperiment() {
   const [emptyNameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
+  const [experimentChance, setExperimentChance] = useState(50);
+  const [endSelected, setEndSelected] = useState("");
+  const [selected, setSelected] = useState('view-page'); //This corresponds to the experiment goal selection
 
   const handleExperimentCreate = async () => {
 
     //asynchronous submittal of experiment info in the text fields
     await fetcher.submit({description, name}, { method: "POST" });
   }; // end CreateExperiment()
-
-  const [selected, setSelected] = useState('view-page');
 
   const handleSelectChange = useCallback(
     (value) => setSelected(value),
@@ -86,6 +89,12 @@ export default function CreateExperiment() {
       const isValid = selectedDate > today;
       setDateError(isValid ? "" : "Date must be in the future");
     }, [setDateError]
+  );
+
+  //End condition list handler
+  const handleEndCondition = useCallback(
+    (value) => setEndSelected(value),
+    [],
   );
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
@@ -147,31 +156,59 @@ export default function CreateExperiment() {
                 setSelected(value);
               }}
             </s-select>
-    
-            <s-stack direction="inline" gap="base">
-              <s-button onclick="window.location.reload()">Discard</s-button>
-              <s-button variant="primary" onClick={handleExperimentCreate}>Save experiment</s-button>
-            </s-stack>
           </s-stack>
         </s-box>
       </s-section>
 
+      {/*Active dates/end conditions portion of code */}
       <s-section heading="Active Dates">
         <s-form>
-          <s-date-field
-            //end date field options
-            id="endDateField"
-            label="End Date" 
-            placeholder="Select end date"
-            allow={"today--"}
-            error={dateError}
-            required //this requires end date to be filled
-            onChange={(e) => { //listens and passes picked time to validate
-              setEndDate(e.target.value)
-              handleDateChange(e.target.value)}}
-            details="Experiment ends at 11:59pm" />
+          <s-stack direction="block" gap="base">
+            <s-choice-list
+              label="End condition"
+              name="endCondition"
+              onChange={handleEndCondition}>
+                <s-choice value="Manual" defaultSelected>Manual</s-choice>
+                <s-choice value="End date">End date</s-choice>
+                <s-choice value="Stable success probability">Stable success probability</s-choice>
+            </s-choice-list>
+
+            <s-date-field
+              //end date field options
+              id="endDateField"
+              label="End Date" 
+              placeholder="Select end date"
+              allow={"today--"}
+              error={dateError}
+              required //this requires end date to be filled
+              onChange={(e) => { //listens and passes picked time to validate
+                setEndDate(e.target.value)
+                handleDateChange(e.target.value)}}
+              details="Experiment ends at 11:59pm" />
+            </s-stack>
         </s-form>
       </s-section>
+      
+      <s-section heading="Experiment Details">
+        <s-form>
+            <s-number-field
+              label="Chance to show experiment"
+              value={experimentChance}
+              onChange={(e) => {
+                const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                setExperimentChance(value);
+              }}
+              min={0}
+              max={100}
+              step={1}
+              suffix="%"
+            />
+          </s-form>
+      </s-section>
+      <s-stack direction="inline" gap="base">
+        <s-button onclick="window.location.reload()">Discard</s-button>
+        <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
+      </s-stack>
     </s-page>
   );
 }
