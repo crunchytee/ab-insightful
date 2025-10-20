@@ -1,6 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
+import { Select, Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from "react";
 import React from 'react';
 
@@ -49,8 +49,8 @@ export default function CreateExperiment() {
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
-  const [goalSelected, setGoalSelected] = useState("");
-
+  const [endSelected, setEndSelected] = useState("");
+  const [selected, setSelected] = useState('view-page'); //This corresponds to the experiment goal selection
 
   const handleExperimentCreate = async () => {
 
@@ -58,6 +58,12 @@ export default function CreateExperiment() {
     await fetcher.submit({description, name}, { method: "POST" });
   }; // end CreateExperiment()
 
+  const handleSelectChange = useCallback(
+    (value) => setSelected(value),
+    [],
+  );
+
+  const [icon, setIcon] = useState("") 
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
     if (!name.trim()) {
@@ -85,7 +91,7 @@ export default function CreateExperiment() {
 
   //End condition list handler
   const handleEndCondition = useCallback(
-    (value) => setGoalSelected(value),
+    (value) => setEndSelected(value),
     [],
   );
 
@@ -93,7 +99,9 @@ export default function CreateExperiment() {
 
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
-  
+ 
+
+ 
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
@@ -134,7 +142,22 @@ export default function CreateExperiment() {
                   onChange={(e) => setDescription(e.target.value)} 
                 />
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
+                
             </s-form>
+            <s-select 
+                 label="Experiment Goal" 
+                 icon="sort" 
+                 defaultSelected={selected === "view-page"}
+                 onChange = { (e) => {
+                   const value = e.target.value;
+                   setSelected(value);
+              }}
+            >
+              <s-option value="view-page" >Viewed Page</s-option>
+              <s-option value="start-checkout">Started Checkout</s-option>
+              <s-option value="add-product">Added Product to Cart</s-option>
+              <s-option value="complete-checkout">Completed Checkout</s-option>
+            </s-select>
           </s-stack>
         </s-box>
       </s-section>
