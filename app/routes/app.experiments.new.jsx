@@ -64,8 +64,6 @@ export default function CreateExperiment() {
   );
 
   const [icon, setIcon] = useState("") 
-
-
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
     if (!name.trim()) {
@@ -146,15 +144,19 @@ export default function CreateExperiment() {
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
                 
             </s-form>
-            <s-select label="Experiment Goal" icon="sort" defaultSelected={selected === "view-page"} >
+            <s-select 
+                 label="Experiment Goal" 
+                 icon="sort" 
+                 defaultSelected={selected === "view-page"}
+                 onChange = { (e) => {
+                   const value = e.target.value;
+                   setSelected(value);
+              }}
+            >
               <s-option value="view-page" >Viewed Page</s-option>
               <s-option value="start-checkout">Started Checkout</s-option>
               <s-option value="add-product">Added Product to Cart</s-option>
               <s-option value="complete-checkout">Completed Checkout</s-option>
-              onChange = { (e) => {
-                const value = e.target.value;
-                setSelected(value);
-              }}
             </s-select>
           </s-stack>
         </s-box>
