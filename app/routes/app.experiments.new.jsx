@@ -13,6 +13,7 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const name = (formData.get("name") || "").trim();
   const description = (formData.get("description") || "").trim();
+  const sectionId = (formData.get("sectionId") || "").trim();
 
   //storage for future errors that may be configured for the fields
   const errors = {}; // will be length 0 when there are no errors
@@ -28,7 +29,9 @@ export const action = async ({ request }) => {
 
   // will pass the data used for the new experiment (currently a single variable)
   const experiment = await createExperiment({
-    description: description.trim()
+    name: name,
+    description: description,
+    sectionId: sectionId
 
   });
 
@@ -45,6 +48,7 @@ export default function CreateExperiment() {
   //state variables (special variables that remember across re-renders (e.g. user input, counters))
   const [name, setName] = useState("") 
   const [description, setDescription] = useState("");
+  const [sectionId, setSectionId] = useState("");
   const [emptyNameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
@@ -55,7 +59,7 @@ export default function CreateExperiment() {
   const handleExperimentCreate = async () => {
 
     //asynchronous submittal of experiment info in the text fields
-    await fetcher.submit({description, name}, { method: "POST" });
+    await fetcher.submit({description, name, sectionId}, { method: "POST" });
   }; // end CreateExperiment()
 
   const handleSelectChange = useCallback(
@@ -193,6 +197,13 @@ export default function CreateExperiment() {
       
       <s-section heading="Experiment Details">
         <s-form>
+          <s-text-field
+            label="Experiment Section ID"
+            placeholder="Enter Shopify section ID"
+            value={sectionId}
+            onChange={(e) => setSectionId(e.target.value)}
+            details="Use the associated Shopify section ID to be tested. Must be visible on production site."
+          />
             <s-number-field
               label="Chance to show experiment"
               value={experimentChance}
