@@ -199,6 +199,7 @@ export default function CreateExperiment() {
         <s-form>
           <s-stack direction="block" gap="base">
             <s-stack direction="block" gap="small">
+              {/*Custom Label Row (SectionID + help link)*/}
               <s-stack direction="inline" align="baseline" gap="large">
                 <s-box flex-grow="1">
                   <s-text as="p" variant="bodyMd" font-weight="medium">
