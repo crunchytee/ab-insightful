@@ -197,13 +197,25 @@ export default function CreateExperiment() {
       
       <s-section heading="Experiment Details">
         <s-form>
+          <s-stack direction="block" gap="base">
+            <s-stack direction="block" gap="small">
+              <s-stack direction="inline" align="baseline" gap="large">
+                <s-box flex-grow="1">
+                  <s-text as="p" variant="bodyMd" font-weight="medium">
+                    Section ID to be tested
+                  </s-text>
+                </s-box>
+                <s-link href="https://www.youtube.com/watch?v=Aq5WXmQQooo&list=RDAq5WXmQQooo&start_radio=1" target="_blank"> 
+                  How do I find my section?
+                </s-link>
+              </s-stack>
           <s-text-field
-            label="Experiment Section ID"
             placeholder="Enter Shopify section ID"
             value={sectionId}
             onChange={(e) => setSectionId(e.target.value)}
-            details="Use the associated Shopify section ID to be tested. Must be visible on production site."
+            details="The associated Shopify section ID to be tested. Must be visible on production site"
           />
+          </s-stack>
             <s-number-field
               label="Chance to show experiment"
               value={experimentChance}
@@ -216,6 +228,7 @@ export default function CreateExperiment() {
               step={1}
               suffix="%"
             />
+          </s-stack>
           </s-form>
       </s-section>
       <s-stack direction="inline" gap="base">
