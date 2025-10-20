@@ -204,12 +204,12 @@ export default function CreateExperiment() {
                     Section ID to be tested
                   </s-text>
                 </s-box>
-                <s-link href="https://www.youtube.com/watch?v=Aq5WXmQQooo&list=RDAq5WXmQQooo&start_radio=1" target="_blank"> 
+                <s-link href="#" target="_blank"> 
                   How do I find my section?
                 </s-link>
               </s-stack>
           <s-text-field
-            placeholder="Enter Shopify section ID"
+            placeholder="shopify-section-sections--25210977943842__header"
             value={sectionId}
             onChange={(e) => setSectionId(e.target.value)}
             details="The associated Shopify section ID to be tested. Must be visible on production site"
