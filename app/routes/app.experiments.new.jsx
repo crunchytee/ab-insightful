@@ -29,9 +29,7 @@ export const action = async ({ request }) => {
 
   // will pass the data used for the new experiment (currently a single variable)
   const experiment = await createExperiment({
-    name: name,
-    description: description,
-    sectionId: sectionId
+    description: description
 
   });
 
