@@ -29,7 +29,8 @@ export const action = async ({ request }) => {
 
   // will pass the data used for the new experiment (currently a single variable)
   const experiment = await createExperiment({
-    description: description,
+    description: description
+
   });
 
   return redirect(`/app/experiments/${experiment.id}`);
