@@ -51,8 +51,9 @@ export default function CreateExperiment() {
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
-  const [endSelected, setEndSelected] = useState("");
+  const [endSelected, setEndSelected] = useState("Manual");
   const [selected, setSelected] = useState('view-page'); //This corresponds to the experiment goal selection
+
 
   const handleExperimentCreate = async () => {
 
@@ -97,17 +98,27 @@ export default function CreateExperiment() {
     [],
   );
 
+  //TODO: This needs to be managed if future bottons are added
+  //clear each individual field on the create experiment page when Discard button clicked
+  const handleDiscard = () => {
+    setName('');
+    setDescription('');
+    setSectionId('');
+    setEndDate('');
+    setExperimentChance(50);
+    setEndSelected('Manual');
+    setSelected('view-page');
+  };
+
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
 
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
  
-
- 
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
-      <s-button slot="secondary-actions" onclick="window.location.reload()">Discard</s-button>
+      <s-button slot="secondary-actions" onClick={handleDiscard}>Discard</s-button>
       <s-section>
 
         {/*Name Portion of code */}
@@ -149,7 +160,7 @@ export default function CreateExperiment() {
             <s-select 
                  label="Experiment Goal" 
                  icon="sort" 
-                 defaultSelected={selected === "view-page"}
+                 value={selected}
                  onChange = { (e) => {
                    const value = e.target.value;
                    setSelected(value);
@@ -172,9 +183,9 @@ export default function CreateExperiment() {
               label="End condition"
               name="endCondition"
               onChange={handleEndCondition}>
-                <s-choice value="Manual" defaultSelected>Manual</s-choice>
-                <s-choice value="End date">End date</s-choice>
-                <s-choice value="Stable success probability">Stable success probability</s-choice>
+                <s-choice value="Manual" defaultSelected={endSelected === "Manual"}>Manual</s-choice>
+                <s-choice value="End date" defaultSelected={endSelected === "End date"}>End date</s-choice>
+                <s-choice value="Stable success probability" defaultSelected={endSelected === "Stable success probability"}>Stable success probability</s-choice>
             </s-choice-list>
 
             <s-date-field
@@ -182,6 +193,7 @@ export default function CreateExperiment() {
               id="endDateField"
               label="End Date" 
               placeholder="Select end date"
+              value={endDate}
               allow={"today--"}
               error={dateError}
               required //this requires end date to be filled
@@ -231,7 +243,7 @@ export default function CreateExperiment() {
           </s-form>
       </s-section>
       <s-stack direction="inline" gap="base">
-        <s-button onclick="window.location.reload()">Discard</s-button>
+        <s-button onClick={handleDiscard}>Discard</s-button>
         <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
       </s-stack>
     </s-page>
