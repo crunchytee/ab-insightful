@@ -4,6 +4,8 @@ register(({ analytics, browser, init, settings }) => {
     // Bootstrap and insert pixel script tag here
 
     // Sample subscribe to page view
+    console.log("Hello world from the Pixel extension")
+
     analytics.subscribe('page_viewed', (event) => {
       console.log('[Pixel] Page viewed', event);
     });
