@@ -18,6 +18,15 @@ const associated_resources_search = { // enum for the list of resources to parse
   OTHER: "/other"
 };
 register(({ analytics, browser, init, settings }) => {
+  analytics.subscribe('product_viewed', (event) => {
+    payload = {
+      "client_id": event.clientId,
+      "timestamp": event.timestamp,
+      "product": event.data.productVariant,
+      "url": event.context.document.location.href
+    }
+    console.log('[Pixel] product viewed ', payload)
+  })
     console.log("Hello world from the Pixel extension")
     // determine what the "resource" at this page is. 
     // parse the location attribute, try to match it against the registered
