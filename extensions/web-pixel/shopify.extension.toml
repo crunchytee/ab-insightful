@@ -1,0 +1,22 @@
+name = "web-pixel"
+type = "web_pixel_extension"
+uid = "bf0c0bec-8f6f-89f8-bcb1-0723c5ee9461eaf9defa"
+
+runtime_context = "strict"
+
+[customer_privacy]
+analytics = true
+marketing = false
+preferences = false
+sale_of_data = "disabled"
+
+[settings]
+type = "object"
+
+[settings.fields.accountID]
+name = "Account ID"
+description = "Account ID"
+type = "single_line_text_field"
+validations =  [
+  { name = "min", value = "1" }
+]
