@@ -1,22 +1,69 @@
 import {register} from "@shopify/web-pixels-extension";
+// [ryan] this seems like a really brittle and obtuse way of doing this.
+// but the page_viewed event doesn't have an explicit field
+// for the 'page associated resource' (blog, product, other?) 
+// i can't seem to find an enumeration of possible resources, so I'm reverting 
+// to an explicit enumeration of the possible resources. 
 
+// limitations of my approach:
+// does not give which blog post it is. merely, the URL is given. 
+const associated_resources_search = { // enum for the list of resources to parse. 
+  // add an entry here if you would like the url parser to be able to
+  // identify another type of resource. 
+  BLOG: "/blog",
+  ARTICLE: "/article",
+  PRODUCT:"/products",
+  COLLECTION: "/collections",
+  PAGE: "/pages",
+  OTHER: "/other"
+};
 register(({ analytics, browser, init, settings }) => {
-    // Bootstrap and insert pixel script tag here
-
-    // Sample subscribe to page view
     console.log("Hello world from the Pixel extension")
-
+    // determine what the "resource" at this page is. 
+    // parse the location attribute, try to match it against the registered
+    // resources in associated_resources_search 
     analytics.subscribe('page_viewed', (event) => {
-      console.log('[Pixel] Page viewed', event);
+      let resource = associated_resources_establish.ERROR;
+      for (const key in associated_resources_search){
+        if(event.context.document.location.startswith(key)){
+          resource = associated_resources_search[key];
+        }
+      }
+      // create the payload of attributes of the event we are interested. 
+      payload = {
+        "client_id": event.clientId,
+        "timestamp":event.timestamp,
+        "page_url":event.context.document.location.href,
+        "associated_resource": resource
+      }
+      console.log('[Pixel] Page viewed', payload);
     });
     analytics.subscribe('checkout_completed', (event) => {
+      payload = {
+        "client_id": event.clientId,
+        "timestamp": event.timestamp,
+        "products": event.data.checkout.lineItems
+      }
       console.log('[Pixel] Checkout Completed', event);
     });
     analytics.subscribe('product_added_to_cart', (event) => {
-      console.log('[Pixel] Product Added to Cart', event);
+
+      payload = {
+        "client_id": event.clientId,
+        "timestamp": event.timestamp,
+        "product": event.data.cartline.merchandise,
+        "add_to_cart_source": event.document.referrer
+      }
+      console.log('[Pixel] Product Added to Cart', payload);
     });
     analytics.subscribe('checkout_started', (event) => {
-      console.log('[Pixel] Checkout Started', event);
+      payload = {
+        "client_id": event.clientId,
+        "timestamp": event.timestamp,
+        "products": event.data.checkout.lineItems,
+
+      }
+      console.log('[Pixel] Checkout Started', payload);
     });
 
 });
