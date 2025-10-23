@@ -32,9 +32,10 @@ register(({ analytics, browser, init, settings }) => {
     // parse the location attribute, try to match it against the registered
     // resources in associated_resources_search 
     analytics.subscribe('page_viewed', (event) => {
-      let resource = associated_resources_establish.ERROR;
+      console.log(event)
+      let resource = associated_resources_search.OTHER;
       for (const key in associated_resources_search){
-        if(event.context.document.location.startswith(key)){
+        if(event.context.document.location.href.includes(associated_resources_search[key])){
           resource = associated_resources_search[key];
         }
       }
@@ -47,6 +48,7 @@ register(({ analytics, browser, init, settings }) => {
       }
       console.log('[Pixel] Page viewed', payload);
     });
+    
     analytics.subscribe('checkout_completed', (event) => {
       payload = {
         "client_id": event.clientId,
@@ -56,12 +58,12 @@ register(({ analytics, browser, init, settings }) => {
       console.log('[Pixel] Checkout Completed', event);
     });
     analytics.subscribe('product_added_to_cart', (event) => {
-
+      console.log('debug: product_added_to_cart: ', event)
       payload = {
         "client_id": event.clientId,
         "timestamp": event.timestamp,
-        "product": event.data.cartline.merchandise,
-        "add_to_cart_source": event.document.referrer
+        "product": event.data.cartLine.merchandise, 
+        "add_to_cart_source": event.context.document.referrer
       }
       console.log('[Pixel] Product Added to Cart', payload);
     });
