@@ -1,7 +1,12 @@
-<script>
-  console.log("Hello from the app extension!");
-</script>
+{% comment %} This script gets placed in the <head> of the website.  {% endcomment %}
+<script src="{{ 'ab-insightful-embed.js' | asset_url }}" defer="defer"></script>
 
+{% comment %} 
+ Schema defines the app as an app embed extension 
+ that operates only in the <head> element of the page. The name 
+ listed here translates to the name of the extension shown
+ in the theme editor.
+{% endcomment %}
 {% schema %}
 {
   "name": "AB Insightful App Embed",
