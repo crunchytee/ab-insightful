@@ -1,3 +1,15 @@
+# How To Install This Extension
+
+First, you need to make sure you have all required dependencies. Run `npm install`.
+Do the following to uninstall any existing AB-Insightful Apps from your dev store. 
+
+1. In your store's dashboard, navigate to Settings -> Apps and Sales Channels. You will see an entry for AB-Insightful. Click the three dots, select uninstall and confirm.
+
+Next, install the app again.
+
+1. Run `shopify app deploy`, and follow the prompts to confirm. If it tells you to override an existing app, do it, but let the team know you have done it.
+2. Once the app successfully deploys, you can run `shopify app dev`.
+
 # Web Pixel Extension
 
 Web pixel app extensions provide developers with a simplified process for managing and processing behavioral data, by loading pixels in a secure sandbox environment with APIs for subscribing to customer events. Web pixel app extensions provide the following benefits to app users and developers:
