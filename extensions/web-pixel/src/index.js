@@ -19,7 +19,7 @@ const associated_resources_search = { // enum for the list of resources to parse
 };
 register(({ analytics, browser, init, settings }) => {
   analytics.subscribe('product_viewed', (event) => {
-    payload = {
+    let payload = {
       "client_id": event.clientId,
       "timestamp": event.timestamp,
       "product": event.data.productVariant,
@@ -40,7 +40,7 @@ register(({ analytics, browser, init, settings }) => {
         }
       }
       // create the payload of attributes of the event we are interested. 
-      payload = {
+      let payload = {
         "client_id": event.clientId,
         "timestamp":event.timestamp,
         "page_url":event.context.document.location.href,
@@ -50,16 +50,16 @@ register(({ analytics, browser, init, settings }) => {
     });
     
     analytics.subscribe('checkout_completed', (event) => {
-      payload = {
+      let payload = {
         "client_id": event.clientId,
         "timestamp": event.timestamp,
         "products": event.data.checkout.lineItems
       }
-      console.log('[Pixel] Checkout Completed', event);
-    });
+      console.log('[Pixel] Checkout Completed', payload);
+    }); 
     analytics.subscribe('product_added_to_cart', (event) => {
       console.log('debug: product_added_to_cart: ', event)
-      payload = {
+      let payload = {
         "client_id": event.clientId,
         "timestamp": event.timestamp,
         "product": event.data.cartLine.merchandise, 
@@ -68,7 +68,7 @@ register(({ analytics, browser, init, settings }) => {
       console.log('[Pixel] Product Added to Cart', payload);
     });
     analytics.subscribe('checkout_started', (event) => {
-      payload = {
+      let payload = {
         "client_id": event.clientId,
         "timestamp": event.timestamp,
         "products": event.data.checkout.lineItems,
