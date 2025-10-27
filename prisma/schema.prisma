@@ -32,7 +32,7 @@ model Session {
 }
 
 model Project {
-  id         String   @id @default(uuid()) @map("project_id") // @map is a backend naming convention alias  
+  id         Int      @id @default(autoincrement()) @map("project_id") // @map is a backend naming convention alias  
   shop       String   @unique
   name       String?
   created_at DateTime @default(now()) @map("created_at")
@@ -44,7 +44,7 @@ model Project {
 }
 
 model Experiment {
-  id           String    @id @default(uuid()) @map("experiment_id")
+  id           Int       @id @default(autoincrement()) @map("experiment_id")
   name         String
   description  String
   status       String    @default("draft") // look for the enum datatype
@@ -55,7 +55,7 @@ model Experiment {
   sectionId    String
   createdAt    DateTime  @default(now())
 
-  projectId String  @map("project_id") // Foreign key
+  projectId Int     @map("project_id") // Foreign key
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade) // connects to Project's PK
 
   experimentGoals     ExperimentGoal[]
@@ -70,7 +70,7 @@ model Experiment {
 }
 
 model Goal {
-  id         String   @id @default(uuid()) @map("goal_id")
+  id         Int      @id @default(autoincrement()) @map("goal_id")
   name       String   @unique // "Completed Purchase", "Viewed Page", etc.
   metricType String?  @map("metric_type") // "conversion", "revenue"
   icon       String?
@@ -85,8 +85,8 @@ model Goal {
 
 // This is a "join table" that connects Experiments and Goals
 model ExperimentGoal {
-  experimentId String @map("experiment_id")
-  goalId       String @map("goal_id")
+  experimentId Int    @map("experiment_id")
+  goalId       Int    @map("goal_id")
   goalRole     String // e.g., "primary", "Secondary", I think? -mel
 
   // Relationships
@@ -98,11 +98,11 @@ model ExperimentGoal {
 }
 
 model Audience {
-  id        String @id @default(uuid()) @map("audience_id")
+  id        Int    @id @default(autoincrement()) @map("audience_id")
   name      String // "New Visitor", "Mobile User"
   rulesJson Json   @map("rules_json")
 
-  projectId String  @map("project_id") // Foreign key
+  projectId Int     @map("project_id") // Foreign key
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade) // Connects to Project's PK
 
   experimentAudeinces ExperimentAudience[]
@@ -113,10 +113,10 @@ model Audience {
 model ExperimentAudience {
   requirementType String @map("requirement_type")
 
-  audienceId String   @map("audience_id") // Foreign Key
+  audienceId Int      @map("audience_id") // Foreign Key
   audience   Audience @relation(fields: [audienceId], references: [id], onDelete: Cascade) // Connects to Audience's PK
 
-  experimentId String     @map("experiment_id")
+  experimentId Int        @map("experiment_id")
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
   @@id([audienceId, experimentId]) // Composite primary key
@@ -124,22 +124,22 @@ model ExperimentAudience {
 }
 
 model ExperimentHistory {
-  id         String   @id @default(uuid()) @map("histroy_id")
+  id         Int      @id @default(autoincrement()) @map("histroy_id")
   prevStatus String   @map("prev_status") // draft
   newStatus  String   @map("new_status") // running
   changedAt  DateTime @default(now()) @map("changed_at")
 
-  experimentId String     @map("experiment_id") // Foreign key
+  experimentId Int        @map("experiment_id") // Foreign key
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade) // connects to Experiment's PK
 }
 
 model Variant {
-  id          String  @id @default(uuid()) @map("variant_id")
+  id          Int     @id @default(autoincrement()) @map("variant_id")
   name        String // "Control", "Variant A"
   description String?
   configData  Json?   @map("config_data") // Stores variant-specific settings (like a different sectionId)
 
-  experimentId String     @map("experiment_id") // Foreign key
+  experimentId Int        @map("experiment_id") // Foreign key
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade) // connects to Experiment's PK
 
   allocations Allocation[]
@@ -150,7 +150,7 @@ model Variant {
 }
 
 model User {
-  id            String   @id @default(uuid()) @map("user_id")
+  id            Int      @id @default(autoincrement()) @map("user_id")
   firstSeen     DateTime @default(now()) @map("first_seen")
   latestSession DateTime @updatedAt @map("latest_session") // Prisma's @updatedAt automatically handles this
   deviceType    String?  @map("device_type")
@@ -163,17 +163,17 @@ model User {
 
 // This is the "join table" that assigns a User to a Variant for an Experiment
 model Allocation {
-  id           String   @id @default(uuid()) @map("assignment_id")
+  id           Int      @id @default(autoincrement()) @map("assignment_id")
   assignedWhen DateTime @default(now()) @map("assigned_when")
   deviceType   String?  @map("device_type") // The device used at the time of allocation
 
-  userId String @map("user_id") // Foreign Key
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) // Connects User's PK
+  userId Int  @map("user_id") // Foreign Key
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade) // Connects User's PK
 
-  experimentId String     @map("experiment_id")
+  experimentId Int        @map("experiment_id")
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
-  variantId String  @map("variant_id")
+  variantId Int     @map("variant_id")
   variant   Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   // This ensures a user can only be allocated to a single experiment ONE time.
@@ -183,21 +183,21 @@ model Allocation {
 
 // This records every time a user completes a goal
 model Conversion {
-  id            String   @id @default(uuid()) @map("conversion_id")
+  id            Int      @id @default(autoincrement()) @map("conversion_id")
   convertedWhen DateTime @default(now()) @map("converted_when")
   deviceType    String?  @map("device_type")
   moneyValue    Decimal? @map("money_value")
 
-  userId String @map("user_id") // Foreign Key
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) // Connects to User's PK
+  userId Int  @map("user_id") // Foreign Key
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade) // Connects to User's PK
 
-  variantId String  @map("variant_id")
+  variantId Int     @map("variant_id")
   variant   Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  goalId String @map("goal_id")
-  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId Int  @map("goal_id")
+  goal   Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
-  experimentId String     @map("experiment_id")
+  experimentId Int        @map("experiment_id")
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
   // This ensures a user can only convert ONCE for a specific goal in an experiment
@@ -207,7 +207,7 @@ model Conversion {
 
 // This stores the calculated statistical results
 model Analysis {
-  id                     String   @id @default(uuid()) @map("result_id")
+  id                     Int      @id @default(autoincrement()) @map("result_id")
   calculatedWhen         DateTime @default(now()) @map("calculated_when")
   daysAnalyzed           Int      @map("days_analyzed")
   totalUsers             Int      @map("total_users")
@@ -219,14 +219,14 @@ model Analysis {
   postAlpha              Int      @map("post_alpha")
   postBeta               Int      @map("post_beta")
 
-  experimentId String     @map("experiment_id") // Foreign Key
+  experimentId Int        @map("experiment_id") // Foreign Key
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade) // Connects to the Experiment's PK
 
-  variantId String  @map("variant_id")
+  variantId Int     @map("variant_id")
   variant   Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  goalId String @map("goal_id")
-  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId Int  @map("goal_id")
+  goal   Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@map("Analysis")
 }
