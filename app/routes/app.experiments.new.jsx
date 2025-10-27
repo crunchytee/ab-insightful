@@ -1,4 +1,5 @@
 import { authenticate } from "../shopify.server";
+import db from "../db.server";
 import { useFetcher, redirect } from "react-router";
 import { Select, Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from "react";
@@ -7,32 +8,92 @@ import React from 'react';
 // Server side code
 export const action = async ({ request }) => {
   // Authenticate request
-  await authenticate.admin(request);
-
+  const { session } = await authenticate.admin(request);
+  const formData = await request.formData();  
+  
   // Get POST request form data & create experiment
-  const formData = await request.formData();
   const name = (formData.get("name") || "").trim();
   const description = (formData.get("description") || "").trim();
   const sectionId = (formData.get("sectionId") || "").trim();
+  const goalValue = (formData.get("goal") || "").trim();
+  const endCondition = (formData.get("endCondition") || "").trim();
+  const endDateStr = (formData.get("endDate") || "").trim();
+  const trafficSplitStr = (formData.get("trafficSplit") || "50").trim(); // Default to "0"
 
-  //storage for future errors that may be configured for the fields
-  const errors = {}; // will be length 0 when there are no errors
+  // Storage Validation Errors
+  const errors = {};                                                // will be length 0 when there are no errors
   if (!name) errors.name = "Name is required";
   if (!description) errors.description = "Description is required";
+  if (!sectionId) errors.sectionId = "Section Id is required";      //Todo: Is sectionId still required?
 
-  if (Object.keys(errors).length) {
-
-    return { errors };
+  // Only validates endDate if endCondition is 'End date'
+  if (endCondition == "End date" && !endDateStr){
+    errors.endDate = "End Date is required when 'End date' is selected"
   }
 
-  const { createExperiment } = await import("../services/experiment.server");
+  if (Object.keys(errors).length) return {errors};
 
-  // will pass the data used for the new experiment (currently a single variable)
-  const experiment = await createExperiment({
-    description: description
-
+  // Find or create a parent Project for this shop
+  const shop = session.shop;
+  const project = await db.project.upsert({
+    where: {shop:shop},
+    update: {},
+    create: {shop:shop, name: `${shop} Project`},
+  });
+  const projectId = project.id;
+  
+  // Map client-side goal value ('view-page') to DB goal name
+  const goalNameMap = {
+    'view-page':'Viewed Page',
+    'start-checkout': 'Started Checkout',
+    'add-product': 'Added Product to Cart',
+    'complete-checkout': 'Completed Checkout'
+  };
+  const goalName = goalNameMap[goalValue];
+  
+  // Find the corresponding Goal record ID
+  const goalRecord = await db.goal.findUnique({
+    where: {name: goalName}
   });
 
+  if (!goalRecord){
+    return {errors: {goal: "Could not find matching goal in the database"}};
+  }
+
+  // Convert form data strings to schema-ready types
+  const goalId = goalRecord.id;
+  const trafficSplit = parseFloat(trafficSplitStr) / 100.0;
+  // Converts the date string to a Date object for Prisma
+  // If no date was provided, set to null
+  const endDate = endDateStr ? new Date(endDateStr) : null;
+
+  // Assembles the final data object for Prisma
+  const experimentData = {
+    name: name,
+    description: description,
+    status: "draft", 
+    trafficSplit: trafficSplit,
+    endCondition: endCondition,
+    endDate: endDate, 
+    sectionId: sectionId,
+    project:{ // Connect to the parent project
+      connect: {
+        id: projectId
+      }
+    }, 
+    experimentGoals: { // Create the related goal
+      create: [
+        {
+          goalId: goalId,   
+          goalRole: "primary" 
+        }
+      ]
+    }
+  };
+
+  const { createExperiment } = await import("../services/experiment.server");
+  const experiment = await createExperiment(experimentData);
+  
   return redirect(`/app/experiments/${experiment.id}`);
 };
 
@@ -44,10 +105,12 @@ export default function CreateExperiment() {
   const fetcher = useFetcher();
 
   //state variables (special variables that remember across re-renders (e.g. user input, counters))
-  const [name, setName] = useState("") 
-  const [description, setDescription] = useState("");
-  const [sectionId, setSectionId] = useState("");
+  const [name, setName] = useState("")
   const [emptyNameError, setNameError] = useState(null)
+  const [description, setDescription] = useState("");
+  const [emptyDescriptionError, setDescriptionError] = useState(null);
+  const [sectionId, setSectionId] = useState("");
+  const [emptySectionIdError, setSectionIdError] = useState(null);
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
@@ -56,24 +119,54 @@ export default function CreateExperiment() {
 
 
   const handleExperimentCreate = async () => {
+    // creates data object for all current state variables   
+      const experimentData = {
+      name: name, 
+      description: description,
+      sectionId: sectionId,
+      goal: selected,                 // holds the "view-page" value
+      endCondition: endSelected,      // holds "Manual", "End Data"
+      endDate:endDate,                // The date string from s-date-field
+      trafficSplit:experimentChance   // 0-100 value
+    };
 
-    //asynchronous submittal of experiment info in the text fields
-    await fetcher.submit({description, name, sectionId}, { method: "POST" });
-  }; // end CreateExperiment()
+    try{
+      await fetcher.submit(experimentData, { method: "POST" });
+    }catch(error) {
+      console.error("Error during fetcher.submit",error);
+    };
+  }; // end HandleCreateExperiment()
 
   const handleSelectChange = useCallback(
     (value) => setSelected(value),
     [],
   );
 
-  const [icon, setIcon] = useState("") 
-  //arrow function expression that is used to set the error message when there is no name
+  const [icon, setIcon] = useState("")
+   
+  // Arrow function expression validates for name
   const handleNameBlur = () => {
     if (!name.trim()) {
       setNameError("Name is a required field")
     } 
     else {
       setNameError(null); //clears error once user fixes
+    }
+  };
+
+  const handleDescriptionBlur = () => {
+    if (!description.trim()) {
+      setDescriptionError("Description is a required field");
+    } else {
+      setDescriptionError(null); //clears error once user fixes
+    }
+  };
+
+  const handleSectionIdBlur = () => {
+    if (!sectionId.trim()) {
+      setSectionIdError("Section ID is a required field");
+    } else {
+      setSectionIdError(null); //clears error once user fixes
     }
   };
 
@@ -109,18 +202,21 @@ export default function CreateExperiment() {
     setEndSelected('Manual');
     setSelected('view-page');
   };
-
-  const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
-
+  
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
-  const descriptionError = errors.description
  
   return (
     <s-page heading="Create Experiment" variant="headingLg">
-      <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
+      <s-button slot="primary-action" variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button> 
       <s-button slot="secondary-actions" onClick={handleDiscard}>Discard</s-button>
+      {(errors.form || errors.goal) && (
+        <s-box padding="base">
+          <s-banner title="There was an error" tone="critical">
+            <p>{errors.form || errors.goal}</p>
+          </s-banner>
+        </s-box>
+      )}
       <s-section>
-
         {/*Name Portion of code */}
         <s-box padding="base">
           <s-stack gap="large-200" direction="block">
@@ -141,7 +237,7 @@ export default function CreateExperiment() {
                     if (emptyNameError && v.trim()) setNameError(null); // clear as soon as it’s valid
                   }} /*Updating the name that will be sent to server on experiment creation for each change */
                   onBlur={handleNameBlur}
-                  error={emptyNameError}
+                  error={errors.name || emptyNameError}
               />    
             </s-form>
 
@@ -152,10 +248,14 @@ export default function CreateExperiment() {
                   placeholder="Add a detailed description of your experiment"
                   value={description}
                   // Known as a controlled component, the value is tied to {description} state
-                  onChange={(e) => setDescription(e.target.value)} 
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDescription(v);
+                    if (emptyDescriptionError && v.trim()) setDescriptionError(null);
+                  }}
+                  onBlur={handleDescriptionBlur}
+                  error={errors.description || emptyDescriptionError} 
                 />
-                {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
-                
             </s-form>
             <s-select 
                  label="Experiment Goal" 
@@ -210,23 +310,28 @@ export default function CreateExperiment() {
           <s-stack direction="block" gap="base">
             <s-stack direction="block" gap="small">
               {/*Custom Label Row (SectionID + help link)*/}
-              <s-stack direction="inline" align="baseline" gap="large">
-                <s-box flex-grow="1">
-                  <s-text as="p" variant="bodyMd" font-weight="medium">
-                    Section ID to be tested
-                  </s-text>
-                </s-box>
-                <s-link href="#" target="_blank"> 
+              <s-text-field
+                label="Section ID to be tested"
+                placeholder="shopify-section-sections--25210977943842__header"
+                value={sectionId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSectionId(v);
+                  if (emptySectionIdError && v.trim()) setSectionIdError(null);
+                }}
+                onBlur={handleSectionIdBlur}
+                details="The associated Shopify section ID to be tested. Must be visible on production site"
+                error={errors.sectionId || emptySectionIdError}
+              >
+                <s-link
+                  slot="help-text"
+                  href="#"
+                  target="_blank"
+                >
                   How do I find my section?
                 </s-link>
-              </s-stack>
-          <s-text-field
-            placeholder="shopify-section-sections--25210977943842__header"
-            value={sectionId}
-            onChange={(e) => setSectionId(e.target.value)}
-            details="The associated Shopify section ID to be tested. Must be visible on production site"
-          />
-          </s-stack>
+              </s-text-field>
+            </s-stack>
             <s-number-field
               label="Chance to show experiment"
               value={experimentChance}

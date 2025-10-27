@@ -48,9 +48,9 @@ model Experiment {
   name         String
   description  String
   status       String    @default("draft") // look for the enum datatype
-  trafficSplit Decimal   @map("traffic_split") // Prisma handles Decimal in SQLite
+  trafficSplit Decimal   @map("traffic_split")
   startDate    DateTime? @map("start_date")
-  endDate      DateTime  @map("end_date")
+  endDate      DateTime? @map("end_date")
   endCondition String?
   sectionId    String
   createdAt    DateTime  @default(now())
@@ -73,7 +73,7 @@ model Goal {
   id         String   @id @default(uuid()) @map("goal_id")
   name       String   @unique // "Completed Purchase", "Viewed Page", etc.
   metricType String?  @map("metric_type") // "conversion", "revenue"
-  icon       String? // <-- ADD THIS to store the icon name
+  icon       String?
   createdAt  DateTime @default(now()) @map("created_at") // for auditing 
 
   experimentGoals ExperimentGoal[]
