@@ -27,12 +27,21 @@ export async function getExperimentById(id) {
   return null;
 }
 
-// Function to get experiments list. This does not return the entire experiment, just the parts that are needed on the experiment list page.
-// Returns null if empty
+// Function to get experiments list. This does not return the entire experiment
+// This is used for the "Experiments List" page
 export async function getExperimentsList() {
-  const experiments = await db.experiment.findMany();
-  if (experiments) {
-    return experiments;
-  }
-  return null;
+  const experiments = await db.experiment.findMany({
+    // Use 'include' to fetch related data (like a JOIN in SQL)
+    include: {
+      // For each experiment, find all its related 'analyses' records
+      analyses:{
+        // For each of those 'analyses', also include its related 'variant'
+        include:{
+          variant:true // This gets us the variant name (e.g., "Control", "Variant A")
+        }
+        }
+      }
+    });
+    
+    return experiments // Returns an array of experiments, each containing a list of its analyses
 }

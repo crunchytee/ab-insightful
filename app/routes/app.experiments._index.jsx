@@ -1,5 +1,6 @@
 import { useLoaderData } from "react-router";
 
+
 // Server side code
 export async function loader() {
   // Get the list of experiments & return them if there are any
@@ -15,7 +16,8 @@ export async function loader() {
 export default function Experimentsindex() {
   // Get list of experiments
   const experiments = useLoaderData();
-  if(experiments == null){
+  console.log("Experiments data:", experiments);
+  if(experiments.length != 0){
     return (
       <s-section heading="Experiments">
         <s-paragraph>Placeholder UI elements to denote when there are experiments</s-paragraph>
