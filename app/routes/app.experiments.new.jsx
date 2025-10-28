@@ -44,7 +44,7 @@ export default function CreateExperiment() {
   const fetcher = useFetcher();
 
   //state variables (special variables that remember across re-renders (e.g. user input, counters))
-  const [name, setName] = useState("") 
+  const [name, setName] = useState(""); 
   const [description, setDescription] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [emptyNameError, setNameError] = useState(null)
@@ -66,7 +66,6 @@ export default function CreateExperiment() {
     [],
   );
 
-  const [icon, setIcon] = useState("") 
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
     if (!name.trim()) {
@@ -114,13 +113,36 @@ export default function CreateExperiment() {
 
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
- 
+
+
+
+const [sumName, setSumName] = useState("No experiment name set"); 
+ /* const [description, setDescription] = useState("");
+  const [sectionId, setSectionId] = useState("");
+  const [emptyNameError, setNameError] = useState(null)
+  const [endDate, setEndDate] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [experimentChance, setExperimentChance] = useState(50);*/
+// state (or derive from existing selection)
+
+// map internal values to a label + icon
+const goalMap = {
+  'view-page': { label: 'View Page', icon: 'view' },
+  'start-checkout': { label: 'Start Checkout', icon: 'clock' },
+  'add-product': { label: 'Add to Cart', icon: 'cart' },
+  'complete-checkout': { label: 'Complete Purchase', icon: 'cash-dollar' },
+};
+
+// derive current badge info and icon from selected goal
+const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
+
+
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
       <s-button slot="secondary-actions" onClick={handleDiscard}>Discard</s-button>
       <s-section>
-
+      
         {/*Name Portion of code */}
         <s-box padding="base">
           <s-stack gap="large-200" direction="block">
@@ -138,6 +160,7 @@ export default function CreateExperiment() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setName(v);
+                    setSumName(v || "No experiment name set");
                     if (emptyNameError && v.trim()) setNameError(null); // clear as soon as it’s valid
                   }} /*Updating the name that will be sent to server on experiment creation for each change */
                   onBlur={handleNameBlur}
@@ -159,7 +182,7 @@ export default function CreateExperiment() {
             </s-form>
             <s-select 
                  label="Experiment Goal" 
-                 icon="sort" 
+                 icon={icon}
                  value={selected}
                  onChange = { (e) => {
                    const value = e.target.value;
@@ -173,7 +196,26 @@ export default function CreateExperiment() {
             </s-select>
           </s-stack>
         </s-box>
+
+      {/*Sidebar to display current experiment in summary panel*/}
       </s-section>
+          <s-section heading={sumName} slot="aside" onChange={(e) => setSumName(e.target.value)}>
+          <s-stack gap="small">
+            <s-badge icon = {icon}>{label}</s-badge>
+            <s-badge tone={sectionId ? "" : "warning"} icon={sectionId ? "check" : "alert-circle"}>
+              {sectionId || "Section not selected"}
+            </s-badge>
+            <s-text font-weight="heavy">Experiment Details</s-text>
+
+            {/* DYNAMIC BULLET LIST */}
+              <s-text >• Segment</s-text>
+              <s-text >• Single Variation</s-text>
+              <s-text >• {experimentChance}% Chance to show</s-text>
+              <s-text >• Active from Today until{" "}{endDate ? new Date(endDate).toLocaleDateString(undefined, {year: "numeric",month: "long", day: "numeric",}) : "—"}</s-text>
+          </s-stack>
+       
+      </s-section>
+
 
       {/*Active dates/end conditions portion of code */}
       <s-section heading="Active Dates">
