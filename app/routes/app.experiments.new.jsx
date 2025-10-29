@@ -52,6 +52,10 @@ export default function CreateExperiment() {
   const [endSelected, setEndSelected] = useState("manual");
   const [goalSelected, setGoalSelected] = useState('completedCheckout');
   const [customerSegment, setCustomerSegment] = useState("allSegments");
+  const [variant, setVariant] = useState(false);
+  const [variantDisplay, setVariantDisplay] = useState("none");
+  const [variantSectionId, setVariantSectionId] = useState("");
+  const [variantExperimentChance, setVariantExperimentChance] = useState(50);
 
 
   const handleExperimentCreate = async () => {
@@ -70,12 +74,17 @@ export default function CreateExperiment() {
     }
   };
 
+  const handleName = (v) => {
+    if (nameError && v.trim()) setNameError(null); // clear as soon as it’s valid
+    setName(v);
+  };
+
   // validating picked dates, throws error for past dates
-  const handleDateChange = (date) => {
+  const handleDateChange = (e) => {
       //pull current date and normalize both date inputs to compare
       const today = new Date();
       today.setHours(0,0,0,0);
-      const selectedDate = new Date(date);
+      const selectedDate = new Date(e);
       selectedDate.setHours(0,0,0,0);
       const isValid = selectedDate > today;
       setDateError(isValid ? "" : "Date must be in the future");
@@ -84,10 +93,17 @@ export default function CreateExperiment() {
       }
   };
 
-  const handleName = (v) => {
-    if (nameError && v.trim()) setNameError(null); // clear as soon as it’s valid
-    setName(v);
+  const handleVariant = () => {
+    setVariant(true);
+    setVariantDisplay("auto");
   };
+
+  const handleVariantUndo = () => {
+    setVariant(false);
+    setVariantDisplay("none");
+    setVariantSectionId("");
+    setVariantExperimentChance(50);
+  }
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
 
@@ -146,8 +162,11 @@ export default function CreateExperiment() {
       
       <s-section heading="Experiment Details">
         <s-form>
-          <s-stack direction="block" gap="base">
+          <s-stack direction="block" gap="base" paddingBlock="base">
             <s-stack direction="block" gap="small">
+              <s-stack display={variantDisplay}>
+                <s-heading>Variant 1</s-heading>
+              </s-stack>
               {/*Custom Label Row (SectionID + help link)*/}
               <s-stack direction="inline" align="baseline" gap="large">
                 <s-box flex-grow="1">
@@ -166,9 +185,49 @@ export default function CreateExperiment() {
                 details="The associated Shopify section ID to be tested. Must be visible on production site"
               />
             </s-stack>
+
+            <s-number-field
+              label="Chance to show experiment"
+              value={experimentChance}
+              inputMode="numeric"
+              onChange={(e) => {
+                const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                setExperimentChance(value);
+              }}
+              min={0}
+              max={100}
+              step={1}
+              suffix="%"
+            />
+
+            {/* Variant 2 fields */}
+            <s-stack display={variantDisplay} paddingBlock="base">
+              <s-heading>Variant 2</s-heading>
+
+              <s-stack direction="block" gap="small" paddingBlock="base">
+                {/*Custom Label Row (SectionID + help link)*/}
+                <s-stack direction="inline" align="baseline" gap="large">
+                  <s-box flex-grow="1">
+                    <s-text as="p" variant="bodyMd" font-weight="medium">
+                      Section ID to be tested
+                    </s-text>
+                  </s-box>
+                  <s-link href="#" target="_blank"> 
+                    How do I find my section?
+                  </s-link>
+                </s-stack>
+                <s-text-field
+                  placeholder="shopify-section-sections--25210977943842__header"
+                  value={variantSectionId}
+                  onChange={(e) => setVariantSectionId(e.target.value)}
+                  details="The associated Shopify section ID to be tested. Must be visible on production site"
+                />
+              </s-stack>
+
               <s-number-field
                 label="Chance to show experiment"
-                value={experimentChance}
+                value={variantExperimentChance}
+                inputMode="numeric"
                 onChange={(e) => {
                   const value = Math.max(0, Math.min(100, Number(e.target.value)));
                   setExperimentChance(value);
@@ -178,6 +237,9 @@ export default function CreateExperiment() {
                 step={1}
                 suffix="%"
               />
+
+            </s-stack>
+
             <s-select label="Customer segment to test"
               value={customerSegment} 
               onChange={(e) => setCustomerSegment(e.target.value)}
@@ -186,9 +248,15 @@ export default function CreateExperiment() {
               <s-option value="desktopVisitors">Desktop Visitors</s-option>
               <s-option value="mobileVisitors">Mobile Visitors</s-option>
             </s-select>
+
           </s-stack>
         </s-form>
       </s-section>
+
+      <s-stack direction="inline" gap="small" justifyContent="end" paddingBlockEnd="base">
+        <s-button icon="minus" disabled={!variant} onClick={handleVariantUndo}>Remove Another Variant</s-button>
+        <s-button icon="plus" disabled={variant} onClick={handleVariant}>Add Another Variant</s-button>
+      </s-stack>
 
       {/*Active dates/end conditions portion of code */}
       <s-section heading="Active Dates">
@@ -218,7 +286,7 @@ export default function CreateExperiment() {
         </s-form>
       </s-section>
 
-      <s-stack direction="inline" gap="base">
+      <s-stack direction="inline" gap="small" justifyContent="end">
         <s-button href="/app/experiments">Discard</s-button>
         <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
       </s-stack>
