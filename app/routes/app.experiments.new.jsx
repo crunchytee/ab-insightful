@@ -42,6 +42,10 @@ export const action = async ({ request }) => {
   
   // Map client-side goal value ('view-page') to DB goal name
   const goalNameMap = {
+    'viewpage':'Viewed Page',
+    'startcheckout': 'Started Checkout',
+    'addproduct': 'Added Product to Cart',
+    'completecheckout': 'Completed Checkout'
   };
   const goalName = goalNameMap[goalValue];
   
@@ -119,7 +123,6 @@ export default function CreateExperiment() {
       name: name, 
       description: description,
       sectionId: sectionId,
-      goal: selected,                 // holds the "view-page" value
       goal: goalSelected,                 // holds the "view-page" value
       endCondition: endSelected,      // holds "Manual", "End Data"
       endDate:endDate,                // The date string from s-date-field
@@ -132,13 +135,6 @@ export default function CreateExperiment() {
       console.error("Error during fetcher.submit",error);
     };
   }; // end HandleCreateExperiment()
-  
-  const handleSelectChange = useCallback(
-    (value) => setSelected(value),
-    [],
-  );
-
-  const [icon, setIcon] = useState("")
   
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
@@ -192,6 +188,7 @@ export default function CreateExperiment() {
   return (
     <s-page heading="Create Experiment" variant="headingLg">
      <s-button slot="primary-action" variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button> 
+     <s-button slot="secondary-actions" href="/app/experiments">Discard</s-button>
       {(errors.form || errors.goal) && (
         <s-box padding="base">
           <s-banner title="There was an error" tone="critical">
@@ -322,53 +319,6 @@ export default function CreateExperiment() {
             </s-stack>
         </s-form>
       </s-section>
-      
-      <s-section heading="Experiment Details">
-        <s-form>
-          <s-stack direction="block" gap="base">
-            <s-stack direction="block" gap="small">
-              {/*Custom Label Row (SectionID + help link)*/}
-              <s-text-field
-                label="Section ID to be tested"
-                placeholder="shopify-section-sections--25210977943842__header"
-                value={sectionId}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setSectionId(v);
-                  if (emptySectionIdError && v.trim()) setSectionIdError(null);
-                }}
-                onBlur={handleSectionIdBlur}
-                details="The associated Shopify section ID to be tested. Must be visible on production site"
-                error={errors.sectionId || emptySectionIdError}
-              >
-                <s-link
-                  slot="help-text"
-                  href="#"
-                  target="_blank"
-                >
-                  How do I find my section?
-                </s-link>
-              </s-text-field>
-            </s-stack>
-            <s-number-field
-              label="Chance to show experiment"
-              value={experimentChance}
-              onChange={(e) => {
-                const value = Math.max(0, Math.min(100, Number(e.target.value)));
-                setExperimentChance(value);
-              }}
-              min={0}
-              max={100}
-              step={1}
-              suffix="%"
-            />
-          </s-stack>
-          </s-form>
-      </s-section>
-      <s-stack direction="inline" gap="base">
-        <s-button href="/app/experiments">Discard</s-button>
-        <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
-      </s-stack>
-    </s-page>
+      </s-page>
   );
 }
