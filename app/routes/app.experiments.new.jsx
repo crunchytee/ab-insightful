@@ -42,10 +42,6 @@ export const action = async ({ request }) => {
   
   // Map client-side goal value ('view-page') to DB goal name
   const goalNameMap = {
-    'view-page':'Viewed Page',
-    'start-checkout': 'Started Checkout',
-    'add-product': 'Added Product to Cart',
-    'complete-checkout': 'Completed Checkout'
   };
   const goalName = goalNameMap[goalValue];
   
@@ -124,6 +120,7 @@ export default function CreateExperiment() {
       description: description,
       sectionId: sectionId,
       goal: selected,                 // holds the "view-page" value
+      goal: goalSelected,                 // holds the "view-page" value
       endCondition: endSelected,      // holds "Manual", "End Data"
       endDate:endDate,                // The date string from s-date-field
       trafficSplit:experimentChance   // 0-100 value
@@ -195,7 +192,6 @@ export default function CreateExperiment() {
   return (
     <s-page heading="Create Experiment" variant="headingLg">
      <s-button slot="primary-action" variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button> 
-     <s-button slot="secondary-actions" onClick={handleDiscard}>Discard</s-button>
       {(errors.form || errors.goal) && (
         <s-box padding="base">
           <s-banner title="There was an error" tone="critical">
