@@ -262,6 +262,28 @@ export default function CreateExperiment() {
       <s-section heading="Active Dates">
         <s-form>
           <s-stack direction="block" gap="base">
+            <s-stack direction="inline" gap="base">
+              <s-date-field
+                //end date field options
+                id="startDateField"
+                label="Start Date" 
+                placeholder="Select start date"
+                value={endDate}
+                allow={"today--"}
+                error={dateError}
+                required //this requires end date to be filled
+                onChange={(e) => {handleDateChange(e.target.value)}} />
+
+              
+
+            </s-stack>
+
+            <s-time-field
+                id="startTimeField"
+                label="Start Time"
+                value="12:00:00"
+                placeholder="Select start time"></s-time-field>
+
             <s-choice-list
               label="End condition"
               name="endCondition"
