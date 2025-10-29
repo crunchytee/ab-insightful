@@ -1,7 +1,7 @@
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
 import { useFetcher, redirect } from "react-router";
 import { useState } from "react";
+import db from "../db.server";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -42,10 +42,10 @@ export const action = async ({ request }) => {
   
   // Map client-side goal value ('view-page') to DB goal name
   const goalNameMap = {
-    'viewpage':'Viewed Page',
-    'startcheckout': 'Started Checkout',
-    'addproduct': 'Added Product to Cart',
-    'completecheckout': 'Completed Checkout'
+    'viewPage':'Viewed Page',
+    'startCheckout': 'Started Checkout',
+    'addProduct': 'Added Product to Cart',
+    'completeCheckout': 'Completed Checkout'
   };
   const goalName = goalNameMap[goalValue];
   
@@ -179,7 +179,7 @@ export default function CreateExperiment() {
   };
 
   const handleName = (v) => {
-    if (nameError && v.trim()) setNameError(null); // clear as soon as it’s valid
+    if (emptyNameError && v.trim()) setNameError(null); // clear as soon as it’s valid
     setName(v);
   };
   
@@ -319,6 +319,10 @@ export default function CreateExperiment() {
             </s-stack>
         </s-form>
       </s-section>
-      </s-page>
+      <s-stack direction="inline" gap="base">
+        <s-button href="/app/experiments">Discard</s-button>
+        <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
+      </s-stack>
+    </s-page>
   );
 }
