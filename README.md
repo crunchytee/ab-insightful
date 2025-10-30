@@ -22,6 +22,7 @@ _If you are on MacOS or linux, you may need to add "sudo" in front of the above 
 ```shell
 shopify app dev
 ```
+
 instructions for AB Insightful dev team members:
 
     You may be instructed to open a new window and log in to Shopify. Follow the prompts, log in, and confirm the code on the screen.
@@ -29,6 +30,9 @@ instructions for AB Insightful dev team members:
     When prompted to create or connect to an existing app, connect it to an existing app
     When prompted to select that app, select "ab-insightful"
 
+### Troubleshooting local development issues
+
+This app contains multiple app theme extensions. In order to properly function, app theme extensions may need to be deployed. Use `shopify app deploy` to do this.
 
 Press P to open the URL to your app. Once you click install, you can start development.
 

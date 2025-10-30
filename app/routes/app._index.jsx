@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useFetcher, useNavigate } from "react-router";
+import { useFetcher } from "react-router";
+import { useNavigate } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
@@ -87,6 +88,7 @@ export default function Index() {
       shopify.toast.show("Product created");
     }
   }, [fetcher.data?.product?.id, shopify]);
+
  // Button list to navigate to different pages
   return (
     <s-page heading="Welcome to AB Insightful">

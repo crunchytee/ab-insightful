@@ -1,8 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
-import { useState, useCallback, useEffect } from "react";
-import React from 'react';
+import { useState } from "react";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -13,6 +11,7 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const name = (formData.get("name") || "").trim();
   const description = (formData.get("description") || "").trim();
+  const sectionId = (formData.get("sectionId") || "").trim();
 
   //storage for future errors that may be configured for the fields
   const errors = {}; // will be length 0 when there are no errors
@@ -28,7 +27,7 @@ export const action = async ({ request }) => {
 
   // will pass the data used for the new experiment (currently a single variable)
   const experiment = await createExperiment({
-    description: description.trim()
+    description: description
 
   });
 
@@ -45,17 +44,24 @@ export default function CreateExperiment() {
   //state variables (special variables that remember across re-renders (e.g. user input, counters))
   const [name, setName] = useState("") 
   const [description, setDescription] = useState("");
-  const [emptyNameError, setNameError] = useState(null)
+  const [sectionId, setSectionId] = useState("");
+  const [nameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
-  const [goalSelected, setGoalSelected] = useState("");
+  const [endSelected, setEndSelected] = useState("manual");
+  const [goalSelected, setGoalSelected] = useState('completedCheckout');
+  const [customerSegment, setCustomerSegment] = useState("allSegments");
+  const [variant, setVariant] = useState(false);
+  const [variantDisplay, setVariantDisplay] = useState("none");
+  const [variantSectionId, setVariantSectionId] = useState("");
+  const [variantExperimentChance, setVariantExperimentChance] = useState(50);
 
 
   const handleExperimentCreate = async () => {
 
     //asynchronous submittal of experiment info in the text fields
-    await fetcher.submit({description, name}, { method: "POST" });
+    await fetcher.submit({description, name, sectionId}, { method: "POST" });
   }; // end CreateExperiment()
 
   //arrow function expression that is used to set the error message when there is no name
@@ -68,59 +74,59 @@ export default function CreateExperiment() {
     }
   };
 
-  
-  //if fetcher data exists, add this otherwise undefined.
+  const handleName = (v) => {
+    if (nameError && v.trim()) setNameError(null); // clear as soon as it’s valid
+    setName(v);
+  };
+
   // validating picked dates, throws error for past dates
-  const handleDateChange = useCallback(
-    (date) => {
+  const handleDateChange = (e) => {
       //pull current date and normalize both date inputs to compare
       const today = new Date();
       today.setHours(0,0,0,0);
-      const selectedDate = new Date(date);
+      const selectedDate = new Date(e);
       selectedDate.setHours(0,0,0,0);
       const isValid = selectedDate > today;
       setDateError(isValid ? "" : "Date must be in the future");
-    }, [setDateError]
-  );
+      if (!dateError) { 
+        setEndDate(e.target.value);
+      }
+  };
 
-  //End condition list handler
-  const handleEndCondition = useCallback(
-    (value) => setGoalSelected(value),
-    [],
-  );
+  const handleVariant = () => {
+    setVariant(true);
+    setVariantDisplay("auto");
+  };
+
+  const handleVariantUndo = () => {
+    setVariant(false);
+    setVariantDisplay("none");
+    setVariantSectionId("");
+    setVariantExperimentChance(50);
+  }
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
 
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
-  
+ 
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
-      <s-button slot="secondary-actions" onclick="window.location.reload()">Discard</s-button>
-      <s-section>
-
+      <s-button slot="secondary-actions" href="/app/experiments">Discard</s-button>
+      <s-section heading="Basic Settings">
         {/*Name Portion of code */}
         <s-box padding="base">
           <s-stack gap="large-200" direction="block">
-            <s-heading>
-              <Text as="h1" variant="headingLg">
-                Basic Settings
-              </Text>
-            </s-heading>
             <s-form>
               <s-text-field
                   label="Experiment Name"
                   placeholder="Unnamed Experiment"
                   value={name}
                   //Event handler callback to set value
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setName(v);
-                    if (emptyNameError && v.trim()) setNameError(null); // clear as soon as it’s valid
-                  }} /*Updating the name that will be sent to server on experiment creation for each change */
+                  onChange={(e) => {handleName(e.target.value)}} /*Updating the name that will be sent to server on experiment creation for each change */
                   onBlur={handleNameBlur}
-                  error={emptyNameError}
+                  error={nameError}
               />    
             </s-form>
 
@@ -134,45 +140,56 @@ export default function CreateExperiment() {
                   onChange={(e) => setDescription(e.target.value)} 
                 />
                 {descriptionError && <s-paragraph tone="critical">{descriptionError}</s-paragraph>}
+                
             </s-form>
+            <s-select 
+                 label="Experiment Goal" 
+                 icon="sort" 
+                 value={goalSelected}
+                 onChange = { (e) => {
+                   const value = e.target.value;
+                   setGoalSelected(value);
+              }}
+            >
+              <s-option value="viewPage" >Viewed Page</s-option>
+              <s-option value="startCheckout">Started Checkout</s-option>
+              <s-option value="addToCart">Added Product to Cart</s-option>
+              <s-option value="completedCheckout">Completed Checkout</s-option>
+            </s-select>
           </s-stack>
         </s-box>
-      </s-section>
-
-      {/*Active dates/end conditions portion of code */}
-      <s-section heading="Active Dates">
-        <s-form>
-          <s-stack direction="block" gap="base">
-            <s-choice-list
-              label="End condition"
-              name="endCondition"
-              onChange={handleEndCondition}>
-                <s-choice value="Manual" defaultSelected>Manual</s-choice>
-                <s-choice value="End date">End date</s-choice>
-                <s-choice value="Stable success probability">Stable success probability</s-choice>
-            </s-choice-list>
-
-            <s-date-field
-              //end date field options
-              id="endDateField"
-              label="End Date" 
-              placeholder="Select end date"
-              allow={"today--"}
-              error={dateError}
-              required //this requires end date to be filled
-              onChange={(e) => { //listens and passes picked time to validate
-                setEndDate(e.target.value)
-                handleDateChange(e.target.value)}}
-              details="Experiment ends at 11:59pm" />
-            </s-stack>
-        </s-form>
       </s-section>
       
       <s-section heading="Experiment Details">
         <s-form>
+          <s-stack direction="block" gap="base" paddingBlock="base">
+            <s-stack direction="block" gap="small">
+              <s-stack display={variantDisplay}>
+                <s-heading>Variant 1</s-heading>
+              </s-stack>
+              {/*Custom Label Row (SectionID + help link)*/}
+              <s-stack direction="inline" align="baseline" gap="large">
+                <s-box flex-grow="1">
+                  <s-text as="p" variant="bodyMd" font-weight="medium">
+                    Section ID to be tested
+                  </s-text>
+                </s-box>
+                <s-link href="#" target="_blank"> 
+                  How do I find my section?
+                </s-link>
+              </s-stack>
+              <s-text-field
+                placeholder="shopify-section-sections--25210977943842__header"
+                value={sectionId}
+                onChange={(e) => setSectionId(e.target.value)}
+                details="The associated Shopify section ID to be tested. Must be visible on production site"
+              />
+            </s-stack>
+
             <s-number-field
               label="Chance to show experiment"
               value={experimentChance}
+              inputMode="numeric"
               onChange={(e) => {
                 const value = Math.max(0, Math.min(100, Number(e.target.value)));
                 setExperimentChance(value);
@@ -182,10 +199,95 @@ export default function CreateExperiment() {
               step={1}
               suffix="%"
             />
-          </s-form>
+
+            {/* Variant 2 fields */}
+            <s-stack display={variantDisplay} paddingBlock="base">
+              <s-heading>Variant 2</s-heading>
+
+              <s-stack direction="block" gap="small" paddingBlock="base">
+                {/*Custom Label Row (SectionID + help link)*/}
+                <s-stack direction="inline" align="baseline" gap="large">
+                  <s-box flex-grow="1">
+                    <s-text as="p" variant="bodyMd" font-weight="medium">
+                      Section ID to be tested
+                    </s-text>
+                  </s-box>
+                  <s-link href="#" target="_blank"> 
+                    How do I find my section?
+                  </s-link>
+                </s-stack>
+                <s-text-field
+                  placeholder="shopify-section-sections--25210977943842__header"
+                  value={variantSectionId}
+                  onChange={(e) => setVariantSectionId(e.target.value)}
+                  details="The associated Shopify section ID to be tested. Must be visible on production site"
+                />
+              </s-stack>
+
+              <s-number-field
+                label="Chance to show experiment"
+                value={variantExperimentChance}
+                inputMode="numeric"
+                onChange={(e) => {
+                  const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                  setExperimentChance(value);
+                }}
+                min={0}
+                max={100}
+                step={1}
+                suffix="%"
+              />
+
+            </s-stack>
+
+            <s-select label="Customer segment to test"
+              value={customerSegment} 
+              onChange={(e) => setCustomerSegment(e.target.value)}
+              details="The customer segment that the experiment can be shown to.">
+              <s-option value="allSegments" defaultSelected>All Segments</s-option>
+              <s-option value="desktopVisitors">Desktop Visitors</s-option>
+              <s-option value="mobileVisitors">Mobile Visitors</s-option>
+            </s-select>
+
+          </s-stack>
+        </s-form>
       </s-section>
-      <s-stack direction="inline" gap="base">
-        <s-button onclick="window.location.reload()">Discard</s-button>
+
+      <s-stack direction="inline" gap="small" justifyContent="end" paddingBlockEnd="base">
+        <s-button icon="minus" disabled={!variant} onClick={handleVariantUndo}>Remove Another Variant</s-button>
+        <s-button icon="plus" disabled={variant} onClick={handleVariant}>Add Another Variant</s-button>
+      </s-stack>
+
+      {/*Active dates/end conditions portion of code */}
+      <s-section heading="Active Dates">
+        <s-form>
+          <s-stack direction="block" gap="base">
+            <s-choice-list
+              label="End condition"
+              name="endCondition"
+              value={endSelected}
+              onChange={(e) => setEndSelected(e.target.value)}>
+                <s-choice value="manual" defaultSelected>Manual</s-choice>
+                <s-choice value="endDate">End date</s-choice>
+                <s-choice value="stableSuccessProbability">Stable success probability</s-choice>
+            </s-choice-list>
+
+            <s-date-field
+              //end date field options
+              id="endDateField"
+              label="End Date" 
+              placeholder="Select end date"
+              value={endDate}
+              allow={"today--"}
+              error={dateError}
+              required //this requires end date to be filled
+              onChange={(e) => {handleDateChange(e.target.value)}} />
+            </s-stack>
+        </s-form>
+      </s-section>
+
+      <s-stack direction="inline" gap="small" justifyContent="end">
+        <s-button href="/app/experiments">Discard</s-button>
         <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
       </s-stack>
     </s-page>
