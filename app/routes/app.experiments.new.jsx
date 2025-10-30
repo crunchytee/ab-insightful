@@ -1,8 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { Select, Text, Page, PageActions, Card, BlockStack } from '@shopify/polaris';
-import { useState, useCallback, useEffect } from "react";
-import React from 'react';
+import { useState } from "react";
 
 // Server side code
 export const action = async ({ request }) => {
@@ -47,12 +45,17 @@ export default function CreateExperiment() {
   const [name, setName] = useState(""); 
   const [description, setDescription] = useState("");
   const [sectionId, setSectionId] = useState("");
-  const [emptyNameError, setNameError] = useState(null)
+  const [nameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
-  const [endSelected, setEndSelected] = useState("Manual");
-  const [selected, setSelected] = useState('view-page'); //This corresponds to the experiment goal selection
+  const [endSelected, setEndSelected] = useState("manual");
+  const [goalSelected, setGoalSelected] = useState('completedCheckout');
+  const [customerSegment, setCustomerSegment] = useState("allSegments");
+  const [variant, setVariant] = useState(false);
+  const [variantDisplay, setVariantDisplay] = useState("none");
+  const [variantSectionId, setVariantSectionId] = useState("");
+  const [variantExperimentChance, setVariantExperimentChance] = useState(50);
 
 
   const handleExperimentCreate = async () => {
@@ -60,11 +63,11 @@ export default function CreateExperiment() {
     //asynchronous submittal of experiment info in the text fields
     await fetcher.submit({description, name, sectionId}, { method: "POST" });
   }; // end CreateExperiment()
-
+/*
   const handleSelectChange = useCallback(
     (value) => setSelected(value),
     [],
-  );
+  );*/
 
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
@@ -76,38 +79,36 @@ export default function CreateExperiment() {
     }
   };
 
-  
-  //if fetcher data exists, add this otherwise undefined.
+  const handleName = (v) => {
+    if (nameError && v.trim()) setNameError(null); // clear as soon as it’s valid
+    setName(v);
+  };
+
   // validating picked dates, throws error for past dates
-  const handleDateChange = useCallback(
-    (date) => {
+  const handleDateChange = (e) => {
       //pull current date and normalize both date inputs to compare
       const today = new Date();
       today.setHours(0,0,0,0);
-      const selectedDate = new Date(date);
+      const selectedDate = new Date(e);
       selectedDate.setHours(0,0,0,0);
       const isValid = selectedDate > today;
       setDateError(isValid ? "" : "Date must be in the future");
-    }, [setDateError]
-  );
-
-  //End condition list handler
-  const handleEndCondition = useCallback(
-    (value) => setEndSelected(value),
-    [],
-  );
-
-  //TODO: This needs to be managed if future bottons are added
-  //clear each individual field on the create experiment page when Discard button clicked
-  const handleDiscard = () => {
-    setName('');
-    setDescription('');
-    setSectionId('');
-    setEndDate('');
-    setExperimentChance(50);
-    setEndSelected('Manual');
-    setSelected('view-page');
+      if (!dateError) { 
+        setEndDate(e.target.value);
+      }
   };
+
+  const handleVariant = () => {
+    setVariant(true);
+    setVariantDisplay("auto");
+  };
+
+  const handleVariantUndo = () => {
+    setVariant(false);
+    setVariantDisplay("none");
+    setVariantSectionId("");
+    setVariantExperimentChance(50);
+  }
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
 
@@ -127,30 +128,42 @@ const [sumName, setSumName] = useState("No experiment name set");
 
 // map internal values to a label + icon
 const goalMap = {
-  'view-page': { label: 'View Page', icon: 'view' },
-  'start-checkout': { label: 'Start Checkout', icon: 'clock' },
-  'add-product': { label: 'Add to Cart', icon: 'cart' },
-  'complete-checkout': { label: 'Complete Purchase', icon: 'cash-dollar' },
+  'viewPage': { label: 'View Page', icon: 'view' },
+  'startCheckout': { label: 'Start Checkout', icon: 'clock' },
+  'addToCart': { label: 'Add to Cart', icon: 'cart' },
+  'completedCheckout': { label: 'Complete Purchase', icon: 'cash-dollar' },
+};
+
+const segmentMap = {
+  'allSegments': 'All Segments',
+  'desktopVisitors': 'Desktop Visitors',
+  'mobileVisitors': 'Mobile Visitors',
+};
+
+const variationMap = {
+  false: 'Single Variation',
+  true: 'Multiple Variations',
+};
+
+const variantMap = {
+  false: 'none',
+  true: 'auto',
 };
 
 // derive current badge info and icon from selected goal
-const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
-
+const { label, icon } = goalMap[goalSelected] ?? { label: '—', icon: 'alert' };
+const customerSegments = segmentMap[customerSegment] ?? '—';
 
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
-      <s-button slot="secondary-actions" onClick={handleDiscard}>Discard</s-button>
-      <s-section>
+
       
+      <s-button slot="secondary-actions" href="/app/experiments">Discard</s-button>
+      <s-section heading="Basic Settings">
         {/*Name Portion of code */}
         <s-box padding="base">
           <s-stack gap="large-200" direction="block">
-            <s-heading>
-              <Text as="h1" variant="headingLg">
-                Basic Settings
-              </Text>
-            </s-heading>
             <s-form>
               <s-text-field
                   label="Experiment Name"
@@ -159,12 +172,13 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
                   //Event handler callback to set value
                   onChange={(e) => {
                     const v = e.target.value;
-                    setName(v);
+                    handleName(v);
                     setSumName(v || "No experiment name set");
                     if (emptyNameError && v.trim()) setNameError(null); // clear as soon as it’s valid
                   }} /*Updating the name that will be sent to server on experiment creation for each change */
+    
                   onBlur={handleNameBlur}
-                  error={emptyNameError}
+                  error={nameError}
               />    
             </s-form>
 
@@ -183,16 +197,17 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
             <s-select 
                  label="Experiment Goal" 
                  icon={icon}
-                 value={selected}
+                 value={goalSelected}
                  onChange = { (e) => {
                    const value = e.target.value;
-                   setSelected(value);
+                   setGoalSelected(value);
               }}
             >
-              <s-option value="view-page" >Viewed Page</s-option>
-              <s-option value="start-checkout">Started Checkout</s-option>
-              <s-option value="add-product">Added Product to Cart</s-option>
-              <s-option value="complete-checkout">Completed Checkout</s-option>
+              <s-option value="completedCheckout">Completed Checkout</s-option>
+              <s-option value="viewPage" >Viewed Page</s-option>
+              <s-option value="startCheckout">Started Checkout</s-option>
+              <s-option value="addToCart">Added Product to Cart</s-option>
+              
             </s-select>
           </s-stack>
         </s-box>
@@ -202,15 +217,22 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
           <s-section heading={sumName} slot="aside" onChange={(e) => setSumName(e.target.value)}>
           <s-stack gap="small">
             <s-badge icon = {icon}>{label}</s-badge>
-            <s-badge tone={sectionId ? "" : "warning"} icon={sectionId ? "check" : "alert-circle"}>
+            <s-badge tone={sectionId ? "" : "warning"} icon={sectionId ? "code" : "alert-circle"}>
               {sectionId || "Section not selected"}
             </s-badge>
+            <s-stack display={variantDisplay}>
+              <s-badge tone={variantSectionId ? "" : "warning"} icon={variantSectionId ? "code" : "alert-circle"}>
+              {variantSectionId || "Section not selected"}
+            </s-badge>
+            </s-stack>
+            
             <s-text font-weight="heavy">Experiment Details</s-text>
 
             {/* DYNAMIC BULLET LIST */}
-              <s-text >• Segment</s-text>
-              <s-text >• Single Variation</s-text>
-              <s-text >• {experimentChance}% Chance to show</s-text>
+              <s-text >• {customerSegments}</s-text>
+              <s-text >• {variationMap[variant] || "—"}</s-text>
+              <s-text >• {experimentChance}% Chance to show Variant 1</s-text>
+              <s-stack display={variantDisplay}><s-text >• {variantExperimentChance}% Chance to show Variant 2</s-text></s-stack>
               <s-text >• Active from Today until{" "}{endDate ? new Date(endDate).toLocaleDateString(undefined, {year: "numeric",month: "long", day: "numeric",}) : "—"}</s-text>
           </s-stack>
        
@@ -224,7 +246,7 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
             <s-choice-list
               label="End condition"
               name="endCondition"
-              onChange={handleEndCondition}>
+              onChange={(e) => setEndSelected(e.target.value)}>
                 <s-choice value="Manual" defaultSelected={endSelected === "Manual"}>Manual</s-choice>
                 <s-choice value="End date" defaultSelected={endSelected === "End date"}>End date</s-choice>
                 <s-choice value="Stable success probability" defaultSelected={endSelected === "Stable success probability"}>Stable success probability</s-choice>
@@ -249,8 +271,11 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
       
       <s-section heading="Experiment Details">
         <s-form>
-          <s-stack direction="block" gap="base">
+          <s-stack direction="block" gap="base" paddingBlock="base">
             <s-stack direction="block" gap="small">
+              <s-stack display={variantDisplay}>
+                <s-heading>Variant 1</s-heading>
+              </s-stack>
               {/*Custom Label Row (SectionID + help link)*/}
               <s-stack direction="inline" align="baseline" gap="large">
                 <s-box flex-grow="1">
@@ -262,16 +287,18 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
                   How do I find my section?
                 </s-link>
               </s-stack>
-          <s-text-field
-            placeholder="shopify-section-sections--25210977943842__header"
-            value={sectionId}
-            onChange={(e) => setSectionId(e.target.value)}
-            details="The associated Shopify section ID to be tested. Must be visible on production site"
-          />
-          </s-stack>
+              <s-text-field
+                placeholder="shopify-section-sections--25210977943842__header"
+                value={sectionId}
+                onChange={(e) => setSectionId(e.target.value)}
+                details="The associated Shopify section ID to be tested. Must be visible on production site"
+              />
+            </s-stack>
+
             <s-number-field
               label="Chance to show experiment"
               value={experimentChance}
+              inputMode="numeric"
               onChange={(e) => {
                 const value = Math.max(0, Math.min(100, Number(e.target.value)));
                 setExperimentChance(value);
@@ -281,11 +308,95 @@ const { label, icon } = goalMap[selected] ?? { label: '—', icon: 'alert' };
               step={1}
               suffix="%"
             />
+
+            {/* Variant 2 fields */}
+            <s-stack display={variantDisplay} paddingBlock="base">
+              <s-heading>Variant 2</s-heading>
+
+              <s-stack direction="block" gap="small" paddingBlock="base">
+                {/*Custom Label Row (SectionID + help link)*/}
+                <s-stack direction="inline" align="baseline" gap="large">
+                  <s-box flex-grow="1">
+                    <s-text as="p" variant="bodyMd" font-weight="medium">
+                      Section ID to be tested
+                    </s-text>
+                  </s-box>
+                  <s-link href="#" target="_blank"> 
+                    How do I find my section?
+                  </s-link>
+                </s-stack>
+                <s-text-field
+                  placeholder="shopify-section-sections--25210977943842__header"
+                  value={variantSectionId}
+                  onChange={(e) => setVariantSectionId(e.target.value)}
+                  details="The associated Shopify section ID to be tested. Must be visible on production site"
+                />
+              </s-stack>
+
+              <s-number-field
+                label="Chance to show experiment"
+                value={variantExperimentChance}
+                inputMode="numeric"
+                onChange={(e) => {
+                  const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                  setVariantExperimentChance(value);
+                }}
+                min={0}
+                max={100}
+                step={1}
+                suffix="%"
+              />
+
+            </s-stack>
+
+            <s-select label="Customer segment to test"
+              value={customerSegment} 
+              onChange={(e) => setCustomerSegment(e.target.value)}
+              details="The customer segment that the experiment can be shown to.">
+              <s-option value="allSegments" defaultSelected>All Segments</s-option>
+              <s-option value="desktopVisitors">Desktop Visitors</s-option>
+              <s-option value="mobileVisitors">Mobile Visitors</s-option>
+            </s-select>
+
           </s-stack>
-          </s-form>
+        </s-form>
       </s-section>
-      <s-stack direction="inline" gap="base">
-        <s-button onClick={handleDiscard}>Discard</s-button>
+
+      <s-stack direction="inline" gap="small" justifyContent="end" paddingBlockEnd="base">
+        <s-button icon="minus" disabled={!variant} onClick={handleVariantUndo}>Remove Another Variant</s-button>
+        <s-button icon="plus" disabled={variant} onClick={handleVariant}>Add Another Variant</s-button>
+      </s-stack>
+
+      {/*Active dates/end conditions portion of code */}
+      <s-section heading="Active Dates">
+        <s-form>
+          <s-stack direction="block" gap="base">
+            <s-choice-list
+              label="End condition"
+              name="endCondition"
+              value={endSelected}
+              onChange={(e) => setEndSelected(e.target.value)}>
+                <s-choice value="manual" defaultSelected>Manual</s-choice>
+                <s-choice value="endDate">End date</s-choice>
+                <s-choice value="stableSuccessProbability">Stable success probability</s-choice>
+            </s-choice-list>
+
+            <s-date-field
+              //end date field options
+              id="endDateField"
+              label="End Date" 
+              placeholder="Select end date"
+              value={endDate}
+              allow={"today--"}
+              error={dateError}
+              required //this requires end date to be filled
+              onChange={(e) => {handleDateChange(e.target.value)}} />
+            </s-stack>
+        </s-form>
+      </s-section>
+
+      <s-stack direction="inline" gap="small" justifyContent="end">
+        <s-button href="/app/experiments">Discard</s-button>
         <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
       </s-stack>
     </s-page>
