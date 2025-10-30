@@ -38,7 +38,7 @@ export default function Experimentsindex() {
               </s-table-header-row>
                 <s-table-body>
                     <s-table-row>
-                    <s-table-cell>John Smith</s-table-cell>
+                    <s-table-cell>Hero Page Variant</s-table-cell>
                     <s-table-cell>Drafting</s-table-cell>
                     <s-table-cell>N/A</s-table-cell>
                     <s-table-cell>N/A</s-table-cell>
