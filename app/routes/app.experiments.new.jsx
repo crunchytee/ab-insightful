@@ -36,6 +36,40 @@ export const action = async ({ request }) => {
 
 //--------------------------- client side ----------------------------------------
 
+function TimeSelect({label = "Select time", value, onChange}) {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour24 = h.toString().padStart(2, "0");
+      const minute = m.toString().padStart(2, "0");
+      const value24 = `${hour24}:${minute}`;
+
+      const suffix = h >= 12 ? "PM" : "AM";
+      const hour12 = ((h + 11) % 12) + 1;
+      const label12 = `${hour12}:${minute} ${suffix}`;
+
+      times.push({ value: value24, label: label12 });
+    }
+  }
+
+  return (
+      <s-select
+        label= {label}
+        icon="clock"
+        value={value}
+        onChange={onChange}
+        placeholder="Choose a time"
+      >
+        {times.map((t) => (
+          <s-option key={t.value} value={t.value}>
+            {t.label}
+          </s-option>
+          
+        ))}
+      </s-select>
+  );
+}
+
 export default function CreateExperiment() {
   
   //fetcher stores the data in the fields into a form that can be retrieved
@@ -47,7 +81,7 @@ export default function CreateExperiment() {
   const [sectionId, setSectionId] = useState("");
   const [nameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
-  const [dateError, setDateError] = useState("");
+  const [endDateError, setEndDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
   const [endSelected, setEndSelected] = useState("manual");
   const [goalSelected, setGoalSelected] = useState('completedCheckout');
@@ -56,6 +90,9 @@ export default function CreateExperiment() {
   const [variantDisplay, setVariantDisplay] = useState("none");
   const [variantSectionId, setVariantSectionId] = useState("");
   const [variantExperimentChance, setVariantExperimentChance] = useState(50);
+  const [startDate, setStartDate] = useState("");
+  const [startDateError, setStartDateError] = useState("");
+  const [startTime, setStartTime] = useState("");
 
 
   const handleExperimentCreate = async () => {
@@ -80,29 +117,39 @@ export default function CreateExperiment() {
   };
 
   // validating picked dates, throws error for past dates
-  const handleDateChange = (e) => {
-      //pull current date and normalize both date inputs to compare
+  const handleDateChange = (field, e) => {
       const today = new Date();
       today.setHours(0,0,0,0);
       const selectedDate = new Date(e);
       selectedDate.setHours(0,0,0,0);
       const isValid = selectedDate > today;
-      setDateError(isValid ? "" : "Date must be in the future");
-      if (!dateError) { 
-        setEndDate(e.target.value);
+     
+      if (field === "start") {
+        setStartDateError(isValid ? "" : "Date must be in the future");
+      } else if (field === "end") {
+        setEndDateError(isValid ? "" : "Date must be in the future");
+      };
+      
+      if (isValid) {
+        if (field === "start") {
+          setStartDate(e.target.value);
+        } else if (field === "end") {
+          setEndDate(e.target.value);
+        }
       }
   };
 
   const handleVariant = () => {
     setVariant(true);
     setVariantDisplay("auto");
+    setVariantExperimentChance(50);
   };
 
   const handleVariantUndo = () => {
     setVariant(false);
     setVariantDisplay("none");
     setVariantSectionId("");
-    setVariantExperimentChance(50);
+    setVariantExperimentChance();
   }
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
@@ -263,26 +310,26 @@ export default function CreateExperiment() {
         <s-form>
           <s-stack direction="block" gap="base">
             <s-stack direction="inline" gap="base">
-              <s-date-field
-                //end date field options
-                id="startDateField"
-                label="Start Date" 
-                placeholder="Select start date"
-                value={endDate}
-                allow={"today--"}
-                error={dateError}
-                required //this requires end date to be filled
-                onChange={(e) => {handleDateChange(e.target.value)}} />
+              <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
+                <s-date-field
+                  id="startDateField"
+                  label="Start Date" 
+                  placeholder="Select start date"
+                  value={startDate}
+                  allow={"today--"}
+                  error={startDateError}
+                  required
+                  onChange={(e) => {handleDateChange("start", e.target.value)}} />
+              </s-box>
 
-              
+              <s-box flex="1" minInlineSize="220px">
+                <TimeSelect
+                  label="Start Time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)} />
+              </s-box>
 
             </s-stack>
-
-            <s-time-field
-                id="startTimeField"
-                label="Start Time"
-                value="12:00:00"
-                placeholder="Select start time"></s-time-field>
 
             <s-choice-list
               label="End condition"
@@ -301,9 +348,9 @@ export default function CreateExperiment() {
               placeholder="Select end date"
               value={endDate}
               allow={"today--"}
-              error={dateError}
+              error={endDateError}
               required //this requires end date to be filled
-              onChange={(e) => {handleDateChange(e.target.value)}} />
+              onChange={(e) => {handleDateChange("end", e.target.value)}} />
             </s-stack>
         </s-form>
       </s-section>
