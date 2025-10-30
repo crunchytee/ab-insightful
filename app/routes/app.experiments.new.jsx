@@ -259,6 +259,7 @@ export default function CreateExperiment() {
       </s-stack>
 
       {/*Active dates/end conditions portion of code */}
+      
       <s-section heading="Active Dates">
         <s-form>
           <s-stack direction="block" gap="base">
@@ -285,11 +286,14 @@ export default function CreateExperiment() {
             </s-stack>
         </s-form>
       </s-section>
-
+      <div style={{ marginBottom: '250px'}}>
       <s-stack direction="inline" gap="small" justifyContent="end">
         <s-button href="/app/experiments">Discard</s-button>
         <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
       </s-stack>
+      </div>
     </s-page>
+      
+    
   );
 }
