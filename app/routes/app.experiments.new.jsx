@@ -43,10 +43,12 @@ function TimeSelect({
   onChange,
   invalidMessage = 'Enter a time like "1:30 PM" or "13:30"'}) {
 
+  //variable declaration, unique id reference setup
   const times = [];
   const popoverId =  `${id}-popover`;
   const inputId = `${id}-input`;
 
+  //logic for making time labels for dropdown menu
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
       const hour24 = h.toString().padStart(2, "0");
@@ -61,6 +63,7 @@ function TimeSelect({
     }
   }
 
+  //converts 24hr format into 12hr am/pm format for readability, 13:00 or 1300 becomes 1:00 PM
   const labelFor = (hhmm) => {
     if (!hhmm) return "";
     const hit = times.find(t => t.value === hhmm);
@@ -70,6 +73,7 @@ function TimeSelect({
     return `${h12}:${String(M).padStart(2,"0")} ${am ? "AM" : "PM"}`;
   };
 
+  //updates display in text field
   const setFieldDisplay = (hhmm) => {
     const el = document.getElementById(inputId);
     if (el) { 
@@ -78,13 +82,16 @@ function TimeSelect({
     }
   };
 
+  //sets error, needed to handle separate error handling
   const setError = (msg) => {
     const el = document.getElementById(inputId);
     el?.setAttribute("error", msg);
   }
 
+  //opens popover on click
   const openPopover = (el) => el?.querySelector(`#${popoverId}Trigger`)?.click();
 
+  //saves typed field, throws error if typed input hasn't been parsed/cleaned
   const commitFromField = (raw) => {
     const el = document.getElementById(inputId);
     const parsed = parseUserTime(raw);
@@ -98,6 +105,7 @@ function TimeSelect({
 
   return (
     <div>
+      {/* This section is what will visually display when the function is called */}
       <s-text-field
         label= {label}
         id={inputId}
@@ -120,6 +128,7 @@ function TimeSelect({
             icon="chevron-down" />
       </s-text-field>
 
+      {/* This is the popover styling and the button population */}
       <s-popover 
         id={popoverId}
         maxBlockSize="200px"
@@ -144,6 +153,7 @@ function TimeSelect({
   );
 }
 
+//This function cleans and parses the user input, we only care about numbers and :, everything else is scrubbed
 function parseUserTime(input) {
   if (!input) return "";
   let s = String(input).trim().toLowerCase().replace(/\s+/g, "").replace(/\./g, "");
@@ -174,8 +184,10 @@ function parseUserTime(input) {
     }
   }
 
+  //error handling for if minutes are out of bounds
   if (isNaN(hh) || isNaN(mm) || mm < 0 || mm > 59) return null;
 
+  //error handling for if user types in am/pm to check that hours are within bounds
   if (ampm) {
     if (hh < 1 || hh > 12) return null;
     if (ampm === "am") {
@@ -186,7 +198,7 @@ function parseUserTime(input) {
   } else {
       if (hh < 0 || hh > 23) return null;
   }
-
+  //This is what we care about most, returns a string in 24hr format with hh:mm
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
