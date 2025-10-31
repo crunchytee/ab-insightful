@@ -226,7 +226,7 @@ export default function CreateExperiment() {
   const [startDateError, setStartDateError] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-
+  const [dateError, setDateError] = useState("");
 
   const handleExperimentCreate = async () => {
 
@@ -257,16 +257,16 @@ export default function CreateExperiment() {
       selectedDate.setHours(0,0,0,0);
       const isValid = selectedDate > today;
      
-      if (field === "start") {
+      if (field == "start") {
         setStartDateError(isValid ? "" : "Date must be in the future");
-      } else if (field === "end") {
+      } else if (field == "end") {
         setEndDateError(isValid ? "" : "Date must be in the future");
       };
       
       if (isValid) {
-        if (field === "start") {
+        if (field == "start") {
           setStartDate(e.target.value);
-        } else if (field === "end") {
+        } else if (field == "end") {
           setEndDate(e.target.value);
         }
       }
@@ -290,16 +290,7 @@ export default function CreateExperiment() {
   const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
   const descriptionError = errors.description
 
-
-
 const [sumName, setSumName] = useState("No experiment name set"); 
- /* const [description, setDescription] = useState("");
-  const [sectionId, setSectionId] = useState("");
-  const [emptyNameError, setNameError] = useState(null)
-  const [endDate, setEndDate] = useState("");
-  const [dateError, setDateError] = useState("");
-  const [experimentChance, setExperimentChance] = useState(50);*/
-// state (or derive from existing selection)
 
 // map internal values to a label + icon
 const goalMap = {
@@ -406,42 +397,10 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
               <s-text >• {variationMap[variant] || "—"}</s-text>
               <s-text >• {experimentChance}% Chance to show Variant 1</s-text>
               <s-stack display={variantDisplay}><s-text >• {variantExperimentChance}% Chance to show Variant 2</s-text></s-stack>
-              <s-text >• Active from Today until{" "}{endDate ? new Date(endDate).toLocaleDateString(undefined, {year: "numeric",month: "long", day: "numeric",}) : "—"}</s-text>
-          </s-stack>
-       
+              <s-text >• Active from {startDate ? new Date(`${startDate}T00:00:00`).toDateString(undefined, {year: "numeric",month: "long", day: "numeric",}) : "—"} until{" "}{endDate ? new Date(`${endDate}T00:00:00`).toLocaleDateString(undefined, {year: "numeric",month: "long", day: "numeric",}) : "—"}</s-text>
+          </s-stack>   
       </s-section>
 
-
-      {/*Active dates/end conditions portion of code */}
-      <s-section heading="Active Dates">
-        <s-form>
-          <s-stack direction="block" gap="base">
-            <s-choice-list
-              label="End condition"
-              name="endCondition"
-              onChange={(e) => setEndSelected(e.target.value)}>
-                <s-choice value="Manual" defaultSelected={endSelected === "Manual"}>Manual</s-choice>
-                <s-choice value="End date" defaultSelected={endSelected === "End date"}>End date</s-choice>
-                <s-choice value="Stable success probability" defaultSelected={endSelected === "Stable success probability"}>Stable success probability</s-choice>
-            </s-choice-list>
-
-            <s-date-field
-              //end date field options
-              id="endDateField"
-              label="End Date" 
-              placeholder="Select end date"
-              value={endDate}
-              allow={"today--"}
-              error={dateError}
-              required //this requires end date to be filled
-              onChange={(e) => { //listens and passes picked time to validate
-                setEndDate(e.target.value)
-                handleDateChange(e.target.value)}}
-              details="Experiment ends at 11:59pm" />
-            </s-stack>
-        </s-form>
-      </s-section>
-      
       <s-section heading="Experiment Details">
         <s-form>
           <s-stack direction="block" gap="base" paddingBlock="base">
@@ -555,7 +514,7 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
                   value={startDate}
                   error={startDateError}
                   required
-                  onChange={(e) => {handleDateChange("start", e.target.value)}} />
+                  onChange={(e) => {setStartDate(e.target.value); handleDateChange("start", e.target.value);}} />
               </s-box>
 
               <s-box flex="1" minInlineSize="220px">
@@ -581,13 +540,16 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
             <s-stack direction="inline" gap="base">
               <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
                 <s-date-field
-                  id="endDateField"
-                  label="End Date" 
-                  placeholder="Select end date"
-                  value={endDate}
-                  error={endDateError}
-                  required
-                  onChange={(e) => {handleDateChange("end", e.target.value)}} />
+              //end date field options
+              id="endDateField"
+              label="End Date" 
+              placeholder="Select end date"
+              value={endDate}
+              error={dateError}
+              required //this requires end date to be filled
+              onChange={(e) => { //listens and passes picked time to validate
+                setEndDate(e.target.value)
+                handleDateChange("end", e.target.value)}} />
               </s-box>
 
               <s-box flex="1" minInlineSize="220px">
