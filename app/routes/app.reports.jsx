@@ -1,13 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLoaderData } from "react-router";
+
+//server side code
+export async function loader() {
+  //get the list of experiments & return them if there are any
+  const { getExperimentsList } = await import("../services/experiment.server");
+  const experiments = await getExperimentsList();
+  if (experiments) {
+    return experiments;
+  }
+  return null;
+}
 
 export default function Reports() {
+    // Get list of experiments
+    const experiments = useLoaderData();
 
-    //state variables (special variables that remember across re-renders (e.g. user input, counters))
-
-    //if custom is selected, show date picker
+    //state variables
     const [showCustom, setShowCustom] = useState(false);
-    //store selected date range
     const [dateRange, setDateRange] = useState(null);
+    const [filteredExperiments, setFilteredExperiments] = useState(experiments);
+
+    //calculate the days since start date
+    const getDaysSince = (startDate) => {
+        if (!startDate) return "Not started";
+        
+        const days = Math.floor((new Date() - new Date(startDate)) / (1000 * 60 * 60 * 24));
+        
+        if (days === 0) return "Less than a day";
+        if (days === 1) return "1 day";
+        if (days < 0) return "Not started";
+        return `${days} days`;
+    };
+
+    //generate a badge for status if applicable
+    const renderStatus = (status) => {
+        if (!status) return "N/A";
+    
+        if (status.toLowerCase() === "active") {
+            return <s-badge tone="info" icon="gauge">Active</s-badge>;
+        } else if (status.toLowerCase() === "completed") {
+            return <s-badge tone="success" icon="check">Completed</s-badge>;
+        } else if (status.toLowerCase() === "archived") {
+            return <s-badge tone="warning" icon="order">Archived</s-badge>;
+        } else if (status.toLowerCase() === "paused") {
+            return <s-badge tone="caution" icon="pause-circle">Paused</s-badge>;
+        }
+        return status;
+    };  
+
+    //render experiment name with link if not active
+    const renderExperimentName = (experiment) => {
+        const name = experiment.name ?? "N/A";
+        
+        if (!experiment.status || experiment.status.toLowerCase() === "active") {
+            return name;
+        }
+        return <a href="/404">{name}</a>;
+    };
+    
+    //function responsible for render of table rows based off db
+    function renderTableData(experiments) {
+        const rows = [];
+
+        for(let i = 0; i < experiments.length; i++) {
+            const curExp = experiments[i];
+      
+            rows.push(
+                <s-table-row key={i}>
+                    <s-table-cell>{renderExperimentName(curExp)}</s-table-cell>
+                    <s-table-cell>{renderStatus(curExp.status)}</s-table-cell>
+                    <s-table-cell>{getDaysSince(curExp.startDate)}</s-table-cell>
+                    <s-table-cell>{curExp.endCondition ?? "N/A"}</s-table-cell>
+                    <s-table-cell>N/A</s-table-cell>
+                </s-table-row>
+            )
+        }
+        return rows;
+    }
 
     //function to retrieve the current date
     const getCurrentDate = () => {
@@ -21,22 +91,37 @@ export default function Reports() {
         return date.toISOString().split('T')[0];
     };
 
+    //filter experiments based on date range
+    const filterByDateRange = (start, end) => {
+        if (!experiments) return [];
+        
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        
+        return experiments.filter(exp => {
+            if (!exp.startDate) return false;
+            const expStartDate = new Date(exp.startDate);
+            return expStartDate >= startDate && expStartDate <= endDate;
+        });
+    };
+
     //handle date range selection
     const handleDateRangeChange = (event) => {
         const value = event.target.value;
         const currentDay = getCurrentDate();
 
-        //if 7, get values for 7 days ago, same for 30
         if (value === '7') {
             const startDate = getDateDaysAgo(7);
-            setDateRange({ start: startDate, end: currentDay });
+            const newDateRange = { start: startDate, end: currentDay };
+            setDateRange(newDateRange);
+            setFilteredExperiments(filterByDateRange(startDate, currentDay));
             setShowCustom(false);
         } else if (value === '30') {
             const startDate = getDateDaysAgo(30);
-            setDateRange({ start: startDate, end: currentDay });
+            const newDateRange = { start: startDate, end: currentDay };
+            setDateRange(newDateRange);
+            setFilteredExperiments(filterByDateRange(startDate, currentDay));
             setShowCustom(false);
-
-        //custom date selection handler
         } else if (value === 'custom') {
             setShowCustom(true);
         }
@@ -44,20 +129,28 @@ export default function Reports() {
 
     const handleDatePickerChange = (event) => {
         const value = event.target.value;
-        //value is in format "YYYY-MM-DD--YYYY-MM-DD"
         if (value && value.includes('--')) {
             const [start, end] = value.split('--');
             setDateRange({ start, end });
+            setFilteredExperiments(filterByDateRange(start, end));
         }
     };
+
     //get default view for date picker (current month)
     const getDefaultView = () => {
         const date = new Date();
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     };
 
+    //initialize with last 30 days 
+    useEffect(() => {
+        const currentDay = getCurrentDate();
+        const startDate = getDateDaysAgo(30);
+        setDateRange({ start: startDate, end: currentDay });
+        setFilteredExperiments(filterByDateRange(startDate, currentDay));
+    }, [experiments]);
+
     return (
-        
         <>
             <s-stack direction="inline" align="start">
                 <div style={{ width: '120px' , marginRight: '16px'}}>
@@ -83,16 +176,44 @@ export default function Reports() {
                     </div>
                 )}
             </s-stack>
-
-            {/* TODO: this is a demonstration element.  Remove when output of date range is being utilized */}
-            {dateRange && (
-                <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                    <strong>Selected Range:</strong> {dateRange.start} to {dateRange.end}
+            
+                <div style={{ marginBottom: '16px', marginTop: '16px'}}>
+                    <s-heading>Experiment Reports</s-heading>
                 </div>
-            )}
-            <s-page heading="Reports">
-                {/* Page components go here */}
-            </s-page>
+                <s-section>
+                    <s-box  background="base"
+                            border="base"
+                            borderRadius="base"
+                            overflow="hidden">
+                        <s-table>
+                            <s-table-header-row>
+                                <s-table-header listSlot="primary">Experiment Name (Click To View Report)</s-table-header>
+                                <s-table-header listSlot="secondary">Status</s-table-header>
+                                <s-table-header listSlot="labeled">Run Length</s-table-header>
+                                <s-table-header listSlot="labeled" format="numeric">End Condition</s-table-header>
+                                <s-table-header listSlot="labeled" format="numeric">Improvement</s-table-header>
+                            </s-table-header-row>
+                            <s-table-body>
+                                {renderTableData(filteredExperiments)}
+                                <s-table-row>
+                                    <s-table-cell>Nav Menu Variant</s-table-cell>
+                                    <s-table-cell>Completed</s-table-cell>
+                                    <s-table-cell>23h</s-table-cell>
+                                    <s-table-cell>35%</s-table-cell>
+                                    <s-table-cell>19.8%</s-table-cell>     
+                                </s-table-row>
+                                <s-table-row>
+                                    <s-table-cell>Product Details Variant</s-table-cell>
+                                    <s-table-cell>Scheduled</s-table-cell>
+                                    <s-table-cell>N/A</s-table-cell>
+                                    <s-table-cell>N/A</s-table-cell>
+                                    <s-table-cell>N/A</s-table-cell>
+                                </s-table-row>
+                            </s-table-body>
+                        </s-table>
+                    </s-box>
+                </s-section>
+            <s-page heading="Reports" variant="headingLg"></s-page>
         </>
     );
 }
