@@ -36,6 +36,172 @@ export const action = async ({ request }) => {
 
 //--------------------------- client side ----------------------------------------
 
+function TimeSelect({ 
+  id = "selectTime", 
+  label = "Select time", 
+  value, 
+  onChange,
+  invalidMessage = 'Enter a time like "1:30 PM" or "13:30"'}) {
+
+  //variable declaration, unique id reference setup
+  const times = [];
+  const popoverId =  `${id}-popover`;
+  const inputId = `${id}-input`;
+
+  //logic for making time labels for dropdown menu
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour24 = h.toString().padStart(2, "0");
+      const minute = m.toString().padStart(2, "0");
+      const value24 = `${hour24}:${minute}`;
+
+      const suffix = h >= 12 ? "PM" : "AM";
+      const hour12 = ((h + 11) % 12) + 1;
+      const label12 = `${hour12}:${minute} ${suffix}`;
+
+      times.push({ value: value24, label: label12 });
+    }
+  }
+
+  //converts 24hr format into 12hr am/pm format for readability, 13:00 or 1300 becomes 1:00 PM
+  const labelFor = (hhmm) => {
+    if (!hhmm) return "";
+    const hit = times.find(t => t.value === hhmm);
+    if (hit) return hit.label;
+    const [H, M] = hhmm.split(":").map(n => parseInt(n, 10));
+    const am = H < 12; const h12 = ((H + 11) % 12) + 1;
+    return `${h12}:${String(M).padStart(2,"0")} ${am ? "AM" : "PM"}`;
+  };
+
+  //updates display in text field
+  const setFieldDisplay = (hhmm) => {
+    const el = document.getElementById(inputId);
+    if (el) { 
+      el.value = hhmm ? labelFor(hhmm) : ""; 
+      el.removeAttribute("error");
+    }
+  };
+
+  //sets error, needed to handle separate error handling
+  const setError = (msg) => {
+    const el = document.getElementById(inputId);
+    el?.setAttribute("error", msg);
+  }
+
+  //opens popover on click
+  const openPopover = (el) => el?.querySelector(`#${popoverId}Trigger`)?.click();
+
+  //saves typed field, throws error if typed input hasn't been parsed/cleaned
+  const commitFromField = (raw) => {
+    const el = document.getElementById(inputId);
+    const parsed = parseUserTime(raw);
+    if (!parsed) { 
+      setError(invalidMessage);
+      return; 
+    }
+    onChange(parsed);
+    setFieldDisplay(parsed);
+  }
+
+  return (
+    <div>
+      {/* This section is what will visually display when the function is called */}
+      <s-text-field
+        label= {label}
+        id={inputId}
+        icon="clock"
+        defaultValue={value ? labelFor(value) : ""}
+        placeholder="Choose a time"
+        onFocus={(e) => openPopover(e.currentTarget.parentElement)}
+        onClick={(e) => openPopover(e.currentTarget.parentElement)}
+        onInput={(e) => e.currentTarget.removeAttribute("error")}
+        onBlur={(e) => commitFromField(e.currentTarget.value)}
+        onKeyDown={(e) => {if (e.key === "Enter") {
+          e.preventDefault(); 
+          commitFromField(e.currentTarget.value);
+        }}} >
+          <s-button
+            slot="accessory"
+            variant="tertiary"
+            disclosure="down"
+            commandFor={popoverId}
+            icon="chevron-down" />
+      </s-text-field>
+
+      {/* This is the popover styling and the button population */}
+      <s-popover 
+        id={popoverId}
+        maxBlockSize="200px"
+        >
+          <s-stack direction="block">
+            {times.map((t) => (
+              <s-button
+                key={t.value}
+                fullWidth
+                variant="tertiary"
+                commandFor={popoverId}
+                onClick={() => {
+                  onChange(t.value); 
+                  setFieldDisplay(t.value);
+                }} >
+                  {t.label}
+              </s-button>
+            ))}
+          </s-stack>
+      </s-popover>
+    </div>  
+  );
+}
+
+//This function cleans and parses the user input, we only care about numbers and :, everything else is scrubbed
+function parseUserTime(input) {
+  if (!input) return "";
+  let s = String(input).trim().toLowerCase().replace(/\s+/g, "").replace(/\./g, "");
+  if (s === "noon") return "12:00";
+  if (s === "midnight") return "00:00";
+  let ampm = null;
+  if (s.endsWith("am")) { 
+    ampm = "am"; s = s.slice(0, -2);
+  } else if (s.endsWith("pm")) {ampm = "pm"; s = s.slice(0, -2); }
+  s = s.replace(/[^0-9:]/g, "");
+  let hh = 0, mm = 0;
+  if (s.includes(":")) {
+    const [hStr, mStr = "0"] = s.split(":");
+    if (!/^\d+$/.test(hStr) || !/^\d+$/.test(mStr)) return null;
+    hh = parseInt(hStr, 10);
+    mm = parseInt(mStr.padEnd(2, "0").slice(0, 2), 10);
+  } else {
+    if (!/^\d+$/.test(s)) return null;
+    if (s.length <= 2) { 
+      hh = parseInt(s, 10); 
+      mm = 0;
+    } else if (s.length === 3) { 
+      hh = parseInt(s.slice(0,1),10); 
+      mm = parseInt(s.slice(1),10);
+    } else {
+      hh = parseInt(s.slice(0, -2), 10); 
+      mm = parseInt(s.slice(-2), 10); 
+    }
+  }
+
+  //error handling for if minutes are out of bounds
+  if (isNaN(hh) || isNaN(mm) || mm < 0 || mm > 59) return null;
+
+  //error handling for if user types in am/pm to check that hours are within bounds
+  if (ampm) {
+    if (hh < 1 || hh > 12) return null;
+    if (ampm === "am") {
+      if (hh === 12) hh = 0;
+    } else {
+      if (hh !== 12) hh += 12;
+    }
+  } else {
+      if (hh < 0 || hh > 23) return null;
+  }
+  //This is what we care about most, returns a string in 24hr format with hh:mm
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 export default function CreateExperiment() {
   
   //fetcher stores the data in the fields into a form that can be retrieved
@@ -47,7 +213,7 @@ export default function CreateExperiment() {
   const [sectionId, setSectionId] = useState("");
   const [nameError, setNameError] = useState(null)
   const [endDate, setEndDate] = useState("");
-  const [dateError, setDateError] = useState("");
+  const [endDateError, setEndDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
   const [endSelected, setEndSelected] = useState("manual");
   const [goalSelected, setGoalSelected] = useState('completedCheckout');
@@ -56,6 +222,10 @@ export default function CreateExperiment() {
   const [variantDisplay, setVariantDisplay] = useState("none");
   const [variantSectionId, setVariantSectionId] = useState("");
   const [variantExperimentChance, setVariantExperimentChance] = useState(50);
+  const [startDate, setStartDate] = useState("");
+  const [startDateError, setStartDateError] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
 
 
   const handleExperimentCreate = async () => {
@@ -63,11 +233,6 @@ export default function CreateExperiment() {
     //asynchronous submittal of experiment info in the text fields
     await fetcher.submit({description, name, sectionId}, { method: "POST" });
   }; // end CreateExperiment()
-/*
-  const handleSelectChange = useCallback(
-    (value) => setSelected(value),
-    [],
-  );*/
 
   //arrow function expression that is used to set the error message when there is no name
   const handleNameBlur = () => {
@@ -85,29 +250,39 @@ export default function CreateExperiment() {
   };
 
   // validating picked dates, throws error for past dates
-  const handleDateChange = (e) => {
-      //pull current date and normalize both date inputs to compare
+  const handleDateChange = (field, e) => {
       const today = new Date();
       today.setHours(0,0,0,0);
       const selectedDate = new Date(e);
       selectedDate.setHours(0,0,0,0);
       const isValid = selectedDate > today;
-      setDateError(isValid ? "" : "Date must be in the future");
-      if (!dateError) { 
-        setEndDate(e.target.value);
+     
+      if (field === "start") {
+        setStartDateError(isValid ? "" : "Date must be in the future");
+      } else if (field === "end") {
+        setEndDateError(isValid ? "" : "Date must be in the future");
+      };
+      
+      if (isValid) {
+        if (field === "start") {
+          setStartDate(e.target.value);
+        } else if (field === "end") {
+          setEndDate(e.target.value);
+        }
       }
   };
 
   const handleVariant = () => {
     setVariant(true);
     setVariantDisplay("auto");
+    setVariantExperimentChance(50);
   };
 
   const handleVariantUndo = () => {
     setVariant(false);
     setVariantDisplay("none");
     setVariantSectionId("");
-    setVariantExperimentChance(50);
+    setVariantExperimentChance();
   }
 
   const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
@@ -157,8 +332,6 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
   return (
     <s-page heading="Create Experiment" variant="headingLg">
       <s-button slot="primary-action" variant="primary">Save Draft</s-button> 
-
-      
       <s-button slot="secondary-actions" href="/app/experiments">Discard</s-button>
       <s-section heading="Basic Settings">
         {/*Name Portion of code */}
@@ -340,6 +513,7 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
                 onChange={(e) => {
                   const value = Math.max(0, Math.min(100, Number(e.target.value)));
                   setVariantExperimentChance(value);
+                  setExperimentChance(value);
                 }}
                 min={0}
                 max={100}
@@ -368,9 +542,32 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
       </s-stack>
 
       {/*Active dates/end conditions portion of code */}
+      
       <s-section heading="Active Dates">
         <s-form>
           <s-stack direction="block" gap="base">
+            <s-stack direction="inline" gap="base">
+              <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
+                <s-date-field
+                  id="startDateField"
+                  label="Start Date" 
+                  placeholder="Select start date"
+                  value={startDate}
+                  error={startDateError}
+                  required
+                  onChange={(e) => {handleDateChange("start", e.target.value)}} />
+              </s-box>
+
+              <s-box flex="1" minInlineSize="220px">
+                <TimeSelect
+                  id="startTimeSelect"
+                  label="Start Time"
+                  value={startTime}
+                  onChange={setStartTime} />
+              </s-box>
+
+            </s-stack>
+
             <s-choice-list
               label="End condition"
               name="endCondition"
@@ -380,25 +577,38 @@ const customerSegments = segmentMap[customerSegment] ?? '—';
                 <s-choice value="endDate">End date</s-choice>
                 <s-choice value="stableSuccessProbability">Stable success probability</s-choice>
             </s-choice-list>
+            
+            <s-stack direction="inline" gap="base">
+              <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
+                <s-date-field
+                  id="endDateField"
+                  label="End Date" 
+                  placeholder="Select end date"
+                  value={endDate}
+                  error={endDateError}
+                  required
+                  onChange={(e) => {handleDateChange("end", e.target.value)}} />
+              </s-box>
 
-            <s-date-field
-              //end date field options
-              id="endDateField"
-              label="End Date" 
-              placeholder="Select end date"
-              value={endDate}
-              allow={"today--"}
-              error={dateError}
-              required //this requires end date to be filled
-              onChange={(e) => {handleDateChange(e.target.value)}} />
+              <s-box flex="1" minInlineSize="220px">
+                <TimeSelect
+                  id="endTimeSelect"
+                  label="End Time"
+                  value={endTime}
+                  onChange={setEndTime} />
+              </s-box>
             </s-stack>
+          </s-stack>
         </s-form>
       </s-section>
-
+      <div style={{ marginBottom: '250px'}}>
       <s-stack direction="inline" gap="small" justifyContent="end">
         <s-button href="/app/experiments">Discard</s-button>
         <s-button variant="primary" onClick={handleExperimentCreate}>Save Draft</s-button>
       </s-stack>
+      </div>
     </s-page>
+      
+    
   );
 }
