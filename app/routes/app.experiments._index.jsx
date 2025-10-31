@@ -15,7 +15,7 @@ export async function loader() {
 export default function Experimentsindex() {
   // Get list of experiments
   const experiments = useLoaderData();
-  if(experiments == {}){
+  if(experiments != null){
     return (
       <s-page heading="Experiment Management">
         <s-section> {/*might be broken */}
