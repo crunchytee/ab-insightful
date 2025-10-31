@@ -3,11 +3,11 @@ import { useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
-import {registerWebPixel} from "../services/extension.server";
-// TODO in the /app/services, add a extension.server.js that will do this "register" part. 
+import { registerWebPixel } from "../services/extension.server";
+// TODO in the /app/services, add a extension.server.js that will do this "register" part.
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
-  await registerWebPixel(request)
+  await registerWebPixel({ request });
   return null;
 };
 
@@ -86,10 +86,7 @@ export default function Index() {
     }
   }, [fetcher.data?.product?.id, shopify]);
 
-  return (
-    <s-page heading="Welcome to AB Insightful">
-    </s-page>
-  );
+  return <s-page heading="Welcome to AB Insightful"></s-page>;
 }
 
 export const headers = (headersArgs) => {
