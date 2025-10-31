@@ -13,7 +13,7 @@ export async function loader() {
 }
 
 export default function Reports() {
-    // Get list of experiments
+    //get list of experiments
     const experiments = useLoaderData();
 
     //state variables
@@ -127,6 +127,7 @@ export default function Reports() {
         }
     };
 
+    //handle custom date picker change
     const handleDatePickerChange = (event) => {
         const value = event.target.value;
         if (value && value.includes('--')) {
