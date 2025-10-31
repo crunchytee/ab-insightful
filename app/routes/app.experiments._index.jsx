@@ -41,7 +41,7 @@ export default function Experimentsindex() {
     return rows
   } // end renderTableData function
 
-  if(experiments != null){
+  if(experiments.length > 0){
     return (
       <s-page heading="Experiment Management">
         <s-section> {/*might be broken */}
@@ -70,7 +70,6 @@ export default function Experimentsindex() {
         </s-section>
       </s-page>
     );
-
   //if there are no experiments, alternate display page
   }else{
       return (
