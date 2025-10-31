@@ -44,8 +44,8 @@ export const action = async ({ request }) => {
   const goalNameMap = {
     'viewPage':'Viewed Page',
     'startCheckout': 'Started Checkout',
-    'addProduct': 'Added Product to Cart',
-    'completeCheckout': 'Completed Checkout'
+    'addToCart': 'Added Product to Cart',
+    'completedCheckout': 'Completed Checkout'
   };
   const goalName = goalNameMap[goalValue];
   
@@ -104,7 +104,7 @@ export default function CreateExperiment() {
 
   //state variables (special variables that remember across re-renders (e.g. user input, counters))
   const [name, setName] = useState("")
-  const [emptyNameError, setNameError] = useState(null)
+  const [nameError, setNameError] = useState(null)
   const [description, setDescription] = useState("");
   const [emptyDescriptionError, setDescriptionError] = useState(null);
   const [sectionId, setSectionId] = useState("");
@@ -179,7 +179,7 @@ export default function CreateExperiment() {
   };
 
   const handleName = (v) => {
-    if (emptyNameError && v.trim()) setNameError(null); // clear as soon as it’s valid
+    if (nameError && v.trim()) setNameError(null); // clear as soon as it’s valid
     setName(v);
   };
   
@@ -208,7 +208,7 @@ export default function CreateExperiment() {
                   //Event handler callback to set value
                   onChange={(e) => {handleName(e.target.value)}} /*Updating the name that will be sent to server on experiment creation for each change */
                   onBlur={handleNameBlur}
-                  error={errors.name || emptyNameError}
+                  error={errors.name || nameError}
               />    
             </s-form>
 
