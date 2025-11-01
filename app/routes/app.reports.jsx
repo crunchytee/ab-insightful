@@ -213,20 +213,6 @@ export default function Reports() {
                             </s-table-header-row>
                             <s-table-body>
                                 {renderTableData(filteredExperiments)}
-                                <s-table-row>
-                                    <s-table-cell>Nav Menu Variant</s-table-cell>
-                                    <s-table-cell>Completed</s-table-cell>
-                                    <s-table-cell>23h</s-table-cell>
-                                    <s-table-cell>35%</s-table-cell>
-                                    <s-table-cell>19.8%</s-table-cell>     
-                                </s-table-row>
-                                <s-table-row>
-                                    <s-table-cell>Product Details Variant</s-table-cell>
-                                    <s-table-cell>Scheduled</s-table-cell>
-                                    <s-table-cell>N/A</s-table-cell>
-                                    <s-table-cell>N/A</s-table-cell>
-                                    <s-table-cell>N/A</s-table-cell>
-                                </s-table-row>
                             </s-table-body>
                         </s-table>
                     </s-box>
