@@ -13,7 +13,7 @@ database.sqlite
 .vscode
 .env
 .env.*
-
+coverage
 
 
 
