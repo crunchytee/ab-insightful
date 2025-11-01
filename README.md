@@ -74,6 +74,14 @@ This template comes pre-configured with examples of:
 
 Please read the [documentation for @shopify/shopify-app-react-router](https://shopify.dev/docs/api/shopify-app-react-router) to see what other API's are available.
 
+## Testing
+
+To setup your dev environment for testing, run `npm install`. To run your tests, run `npm run test`. To run your tests in 'watch' mode, run `npm run test:watch`.
+
+### Writing Tests
+
+Follow the examples posted in the discord for the general structure of tests. All your tests should be placed in `app/__tests__/`.
+
 ## Shopify Dev MCP
 
 This template is configured with the Shopify Dev MCP. This instructs [Cursor](https://cursor.com/), [GitHub Copilot](https://github.com/features/copilot) and [Claude Code](https://claude.com/product/claude-code) and [Google Gemini CLI](https://github.com/google-gemini/gemini-cli) to use the Shopify Dev MCP.
