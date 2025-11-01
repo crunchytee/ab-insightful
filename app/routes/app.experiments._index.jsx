@@ -12,17 +12,68 @@ export async function loader() {
   return null;
 }
 
-// Client side code
+  // Client side code
 export default function Experimentsindex() {
   // Get list of experiments
   const experiments = useLoaderData();
-  console.log("Experiments data:", experiments);
-  if(experiments.length == 0){
+
+  //function responsible for render of table rows based off db
+  function renderTableData(experiments)
+  {
+    const rows = [];
+
+    for(let i = 0; i < experiments.length; i++)
+    {
+      //single tuple of the experiment data
+      const curExp = experiments[i];
+      
+      //pushes javascripts elements into the array
+      rows.push(
+        <s-table-row>
+          <s-table-cell>
+            <s-link href={("./app/routes/reports/" + curExp.id)}>{curExp.name ?? "empty-name"}</s-link>
+          </s-table-cell> {/* displays N/A when data is null */}
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+        </s-table-row>
+      )
+    }
+    return rows
+  } // end renderTableData function
+
+  if(experiments.length > 0){
     return (
-      <s-section heading="Experiments">
-        <s-paragraph>Placeholder UI elements to denote when there are experiments</s-paragraph>
-      </s-section>
+      <s-page heading="Experiment Management">
+        <s-section> {/*might be broken */}
+          <s-heading>Experiment List</s-heading>
+
+          {/* Table Section of experiment list page */}
+          <s-box  background="base"
+                  border="base"
+                  borderRadius="base"
+                  overflow="hidden"> {/*box used to provide a curved edge table */}
+            <s-table>
+              <s-table-header-row>
+                <s-table-header listSlot="primary">Name</s-table-header>
+                <s-table-header listSlot="secondary">Status</s-table-header>
+                <s-table-header listSlot="labeled">Runtime</s-table-header>
+                <s-table-header listSlot="labeled" format="numeric">Goal Completion Rate</s-table-header>
+                <s-table-header listSlot="labeled" format="numeric">Improvement</s-table-header>
+                <s-table-header listSlot="labeled" format="numeric">Probability to be the best</s-table-header>
+                {/*Place Quick Access Button here */}
+              </s-table-header-row>
+                <s-table-body>
+                    {renderTableData(experiments)} {/* function call that returns the jsx data for table rows */}
+                </s-table-body>
+              </s-table>
+          </s-box> {/*end of table section*/}
+        </s-section>
+      </s-page>
     );
+  //if there are no experiments, alternate display page
   }else{
       return (
     <s-section heading="Experiments">
@@ -49,6 +100,6 @@ export default function Experimentsindex() {
       </s-grid>
     </s-section>
       );
-}
+  }
 
 }
