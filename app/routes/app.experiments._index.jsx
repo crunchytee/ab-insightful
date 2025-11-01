@@ -29,7 +29,9 @@ export default function Experimentsindex() {
       //pushes javascripts elements into the array
       rows.push(
         <s-table-row>
-          <s-table-cell>{curExp.name ?? "empty-name"}</s-table-cell> {/* displays N/A when data is null */}
+          <s-table-cell>
+            <s-link href={("./app/routes/reports/" + curExp.id)}>{curExp.name ?? "empty-name"}</s-link>
+          </s-table-cell> {/* displays N/A when data is null */}
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
