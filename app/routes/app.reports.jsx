@@ -4,8 +4,8 @@ import { useLoaderData } from "react-router";
 //server side code
 export async function loader() {
   //get the list of experiments & return them if there are any
-  const { getExperimentsList } = await import("../services/experiment.server");
-  const experiments = await getExperimentsList();
+  const { getExperimentsList1 } = await import("../services/experiment.server");
+  const experiments = await getExperimentsList1();
   if (experiments) {
     return experiments;
   }
@@ -58,6 +58,23 @@ export default function Reports() {
         }
         return <a href="/404">{name}</a>;
     };
+
+    //get conversions for experiment
+    const getConversionRate = (experiment) => {
+    //check for analysis data
+    if (experiment.analyses && experiment.analyses.length > 0) {
+        //get the most recent analysis
+        const latestAnalysis = experiment.analyses[experiment.analyses.length - 1];
+        //get the conversions and users from analysis
+        const { totalConversions, totalUsers } = latestAnalysis;
+        
+        //check for valid data
+        if (totalConversions !== null && totalConversions !== undefined && totalUsers !== null && totalUsers !== undefined) {
+            return `${totalConversions}/${totalUsers}`;
+        }
+    }
+    return "N/A";
+};
     
     //function responsible for render of table rows based off db
     function renderTableData(experiments) {
@@ -72,7 +89,7 @@ export default function Reports() {
                     <s-table-cell>{renderStatus(curExp.status)}</s-table-cell>
                     <s-table-cell>{getDaysSince(curExp.startDate)}</s-table-cell>
                     <s-table-cell>{curExp.endCondition ?? "N/A"}</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
+                    <s-table-cell>{getConversionRate(curExp)}</s-table-cell>
                 </s-table-row>
             )
         }
@@ -192,7 +209,7 @@ export default function Reports() {
                                 <s-table-header listSlot="secondary">Status</s-table-header>
                                 <s-table-header listSlot="labeled">Run Length</s-table-header>
                                 <s-table-header listSlot="labeled" format="numeric">End Condition</s-table-header>
-                                <s-table-header listSlot="labeled" format="numeric">Improvement</s-table-header>
+                                <s-table-header listSlot="labeled" format="numeric">Conversions</s-table-header>
                             </s-table-header-row>
                             <s-table-body>
                                 {renderTableData(filteredExperiments)}
