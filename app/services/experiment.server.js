@@ -36,3 +36,18 @@ export async function getExperimentsList() {
   }
   return null;
 }
+
+//get the experiment list, additionally analyses for conversion rate
+export async function getExperimentsList1() {
+  const experiments = await db.experiment.findMany({
+    include: {
+      analyses: true
+    }
+  });
+  
+  if (experiments) {
+    return experiments;
+  }
+  
+  return null;
+}
