@@ -28,7 +28,7 @@ export const action = async ({ request }) => {
   }
 
   const data = await request.json();
-  console.log("request to collect:", data);
+  console.log("Event happened:", data);
   // Handle the analytics data (SOON)
 
   return Response.json(
