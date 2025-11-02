@@ -19,24 +19,36 @@ const associated_resources_search = {
   OTHER: "/other",
 };
 register(({ analytics, browser, init, settings }) => {
-  // Get app URL from extension settings
+  // Get shop from the current page URL or from pixel context
   const appUrl = settings.appUrl;
+  const collectUrl = `${appUrl}/api/collect`;
+
+  // Micro-function for sending events to server
+  function sendData(payload) {
+    fetch(collectUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", // Indicate that the body is JSON
+      },
+      body: JSON.stringify(payload),
+    });
+  }
 
   analytics.subscribe("product_viewed", (event) => {
     let payload = {
+      event_type: "product_viewed",
       client_id: event.clientId,
       timestamp: event.timestamp,
       product: event.data.productVariant,
       url: event.context.document.location.href,
     };
-    console.log("[Pixel] product viewed ", payload);
+    sendData(payload);
   });
-  console.log("Hello world from the Pixel extension");
+
   // determine what the "resource" at this page is.
   // parse the location attribute, try to match it against the registered
   // resources in associated_resources_search
   analytics.subscribe("page_viewed", (event) => {
-    console.log(event);
     let resource = associated_resources_search.OTHER;
     for (const key in associated_resources_search) {
       if (
@@ -49,39 +61,43 @@ register(({ analytics, browser, init, settings }) => {
     }
     // create the payload of attributes of the event we are interested.
     let payload = {
+      event_type: "page_viewed",
       client_id: event.clientId,
       timestamp: event.timestamp,
       page_url: event.context.document.location.href,
       associated_resource: resource,
     };
-    console.log(`app URL: ${appUrl}`);
-    console.log("[Pixel] Page viewed", payload);
+    sendData(payload);
   });
 
   analytics.subscribe("checkout_completed", (event) => {
     let payload = {
+      event_type: "checkout_completed",
       client_id: event.clientId,
       timestamp: event.timestamp,
       products: event.data.checkout.lineItems,
     };
-    console.log("[Pixel] Checkout Completed", payload);
+    sendData(payload);
   });
+
   analytics.subscribe("product_added_to_cart", (event) => {
-    console.log("debug: product_added_to_cart: ", event);
     let payload = {
+      event_type: "product_added_to_cart",
       client_id: event.clientId,
       timestamp: event.timestamp,
       product: event.data.cartLine.merchandise,
       add_to_cart_source: event.context.document.referrer,
     };
-    console.log("[Pixel] Product Added to Cart", payload);
+    sendData(payload);
   });
+
   analytics.subscribe("checkout_started", (event) => {
     let payload = {
+      event_type: "checkout_started",
       client_id: event.clientId,
       timestamp: event.timestamp,
       products: event.data.checkout.lineItems,
     };
-    console.log("[Pixel] Checkout Started", payload);
+    sendData(payload);
   });
 });
