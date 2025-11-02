@@ -7,6 +7,8 @@ import { authenticate } from "../shopify.server";
 // TODO in the /app/services, add a extension.server.js that will do this "register" part.
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
+  const { updateWebPixel } = await import("../services/extension.server");
+  await updateWebPixel({ request });
 
   return null;
 };
