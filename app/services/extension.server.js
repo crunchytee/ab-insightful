@@ -37,6 +37,23 @@ export async function registerWebPixel({ request }) {
       "An error occurred while trying to register the Web Pixel App Extension:",
       responseAsJSON.data.webPixelCreate.userErrors,
     );
+    return new Response(
+      JSON.stringify({
+        message:
+          "App pixel was unable to register. Please check Shopify Admin -> Settings -> Customer events. If ab-insightful is already registered, mark this item as complete. Otherwise, please try again.",
+        action: "enableTracking",
+      }),
+      {
+        status: 500,
+      },
+    );
   }
-  return null;
+  return new Response(
+    JSON.stringify({
+      message:
+        "App pixel registered successfully. You can mark this step as complete!",
+      action: "enableTracking",
+    }),
+    { status: 200 },
+  );
 }

@@ -1,19 +1,28 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useFetcher } from "react-router";
 import { useNavigate } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
-import { registerWebPixel } from "../services/extension.server";
 // TODO in the /app/services, add a extension.server.js that will do this "register" part.
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
-  await registerWebPixel({ request });
+
   return null;
 };
 
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const actionType = formData.get("action");
+
+  // Setup Guide -> Enable Tracking
+  if (actionType === "enableTracking") {
+    const { registerWebPixel } = await import("../services/extension.server");
+    const response = await registerWebPixel({ request });
+
+    return response.json();
+  }
 };
 
 export default function Index() {
@@ -23,9 +32,153 @@ export default function Index() {
   // remove automatic top-level redirect (use buttons for navigation)
   const navigate = useNavigate();
 
+  // State for setup guide
+  const [visible, setVisible] = useState({
+    setupGuide: true,
+  });
+  const [expanded, setExpanded] = useState({
+    setupGuide: true,
+    step1: false,
+  });
+  const [progress, setProgress] = useState(0);
+  const [trackingStatus, setTrackingStatus] = useState(null);
+
+  // Function for enabling tracking
+  const enableTracking = async () => {
+    await fetcher.submit({ action: "enableTracking" }, { method: "POST" });
+  };
+
+  // Update status of Setup guide based on responses
+  useEffect(() => {
+    if (fetcher.data && fetcher.state === "idle") {
+      const actionType = fetcher.data.action;
+      // Determine which action has an update
+      if (actionType === "enableTracking") {
+        setTrackingStatus(fetcher.data.message);
+      }
+    }
+  }, [fetcher.data, fetcher.state]);
+
   // Button list to navigate to different pages
   return (
     <s-page heading="Welcome to AB Insightful">
+      {/* Begin Setup guide */}
+      {visible.setupGuide && (
+        <s-section>
+          <s-grid gap="small">
+            {/* Header */}
+            <s-grid gap="small-200">
+              <s-grid
+                gridTemplateColumns="1fr auto auto"
+                gap="small-300"
+                alignItems="center"
+              >
+                <s-heading>Setup Guide</s-heading>
+                {/* Critical steps need to come first. Once they are completed, 
+                the user may choose to dismiss the setup guide */}
+                {progress >= 1 && (
+                  <s-button
+                    accessibilityLabel="Dismiss Guide"
+                    onClick={() =>
+                      setVisible({ ...visible, setupGuide: false })
+                    }
+                    variant="tertiary"
+                    tone="neutral"
+                    icon="x"
+                  ></s-button>
+                )}
+
+                <s-button
+                  accessibilityLabel="Toggle setup guide"
+                  onClick={(e) =>
+                    setExpanded({
+                      ...expanded,
+                      setupGuide: !expanded.setupGuide,
+                    })
+                  }
+                  variant="tertiary"
+                  tone="neutral"
+                  icon={expanded.setupGuide ? "chevron-up" : "chevron-down"}
+                ></s-button>
+              </s-grid>
+              <s-paragraph>
+                Please complete the following steps to begin using AB
+                Insightful!
+              </s-paragraph>
+              <s-paragraph color="subdued">
+                {progress} out of 1 steps completed
+              </s-paragraph>
+            </s-grid>
+            {/* Steps Container */}
+            <s-box
+              borderRadius="base"
+              border="base"
+              background="base"
+              display={expanded.setupGuide ? "auto" : "none"}
+            >
+              {/* Step 1 */}
+              <s-box>
+                <s-grid
+                  gridTemplateColumns="1fr auto"
+                  gap="base"
+                  padding="small"
+                >
+                  <s-checkbox
+                    label="Enable on-site tracking"
+                    onInput={(e) =>
+                      setProgress(
+                        e.currentTarget.checked ? progress + 1 : progress - 1,
+                      )
+                    }
+                  ></s-checkbox>
+                  <s-button
+                    onClick={(e) => {
+                      setExpanded({ ...expanded, step1: !expanded.step1 });
+                    }}
+                    accessibilityLabel="Toggle step 1 details"
+                    variant="tertiary"
+                    icon={expanded.step1 ? "chevron-up" : "chevron-down"}
+                  ></s-button>
+                </s-grid>
+                <s-box
+                  padding="small"
+                  paddingBlockStart="none"
+                  display={expanded.step1 ? "auto" : "none"}
+                >
+                  <s-box
+                    padding="base"
+                    background="subdued"
+                    borderRadius="base"
+                  >
+                    <s-grid
+                      gridTemplateColumns="1fr auto"
+                      gap="base"
+                      alignItems="center"
+                    >
+                      <s-grid gap="small-200">
+                        <s-paragraph>
+                          Enable on-site tracking so AB Insightful can collect
+                          information about experiment goal completions.
+                        </s-paragraph>
+                        <s-button variant="primary" onClick={enableTracking}>
+                          Enable Tracking
+                        </s-button>
+                        {trackingStatus && <s-text>{trackingStatus}</s-text>}
+                      </s-grid>
+                    </s-grid>
+                  </s-box>
+                </s-box>
+              </s-box>
+              {/* Step 2 */}
+              <s-divider />
+              {/* Add additional steps here... */}
+            </s-box>
+          </s-grid>
+        </s-section>
+      )}
+      {/* End Setup guide */}
+
+      {/* Begin quick links */}
       <div
         style={{
           display: "flex",
@@ -71,6 +224,7 @@ export default function Index() {
           </button>
         ))}
       </div>
+      {/* End Quick Links */}
     </s-page>
   );
 }
