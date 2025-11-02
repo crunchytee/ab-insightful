@@ -19,6 +19,9 @@
     "vite": "vite",
     "typecheck": "react-router typegen && tsc --noEmit"
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.10"
