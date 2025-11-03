@@ -20,7 +20,7 @@
     "typecheck": "react-router typegen && tsc --noEmit"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "node seed.js"
   },
   "type": "module",
   "engines": {
