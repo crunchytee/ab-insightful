@@ -83,13 +83,19 @@ export async function updateWebPixel({ request }) {
   const { admin, session } = await authenticate.admin(request);
 
   // First check to see if the web pixel is already registered
-  const webPixelId = await getWebPixelId(session);
+  let webPixelId = await getWebPixelId(session);
 
   // If no web pixel, register one and get ID
   if (!webPixelId) {
-    registerWebPixel({ request });
+    await registerWebPixel({ request });
 
-    webPixelId = await getWebPixelId(session);
+    return new Response(
+      JSON.stringify({
+        message: "App pixel updated successfully.",
+        action: "updateWebPixel",
+      }),
+      { status: 200 },
+    );
   }
 
   // Next, update the web pixel on Shopify API
