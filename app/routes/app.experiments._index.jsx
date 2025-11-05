@@ -1,5 +1,6 @@
 import { useLoaderData } from "react-router";
 
+
 // Server side code
 export async function loader() {
   // Get the list of experiments & return them if there are any
@@ -15,7 +16,35 @@ export async function loader() {
 export default function Experimentsindex() {
   // Get list of experiments
   const experiments = useLoaderData();
-  if(experiments != null){
+
+  //function responsible for render of table rows based off db
+  function renderTableData(experiments)
+  {
+    const rows = [];
+
+    for(let i = 0; i < experiments.length; i++)
+    {
+      //single tuple of the experiment data
+      const curExp = experiments[i];
+      
+      //pushes javascripts elements into the array
+      rows.push(
+        <s-table-row>
+          <s-table-cell>
+            <s-link href={("./app/routes/reports/" + curExp.id)}>{curExp.name ?? "empty-name"}</s-link>
+          </s-table-cell> {/* displays N/A when data is null */}
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>N/A</s-table-cell>
+        </s-table-row>
+      )
+    }
+    return rows
+  } // end renderTableData function
+
+  if(experiments.length > 0){
     return (
       <s-page heading="Experiment Management">
         <s-section> {/*might be broken */}
@@ -37,37 +66,13 @@ export default function Experimentsindex() {
                 {/*Place Quick Access Button here */}
               </s-table-header-row>
                 <s-table-body>
-                    <s-table-row>
-                    <s-table-cell>Hero Page Variant</s-table-cell>
-                    <s-table-cell>Drafting</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                  </s-table-row>
-                  <s-table-row>
-                    <s-table-cell>Nav Menu Variant</s-table-cell>
-                    <s-table-cell>Completed</s-table-cell>
-                    <s-table-cell>23h</s-table-cell>
-                    <s-table-cell>35%</s-table-cell>
-                    <s-table-cell>19.8%</s-table-cell>
-                    <s-table-cell>Menu C (83.3%)</s-table-cell>             
-                  </s-table-row>
-                  <s-table-row>
-                    <s-table-cell>Product Details Variant</s-table-cell>
-                    <s-table-cell>Scheduled</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                    <s-table-cell>N/A</s-table-cell>
-                  </s-table-row>
+                    {renderTableData(experiments)} {/* function call that returns the jsx data for table rows */}
                 </s-table-body>
               </s-table>
           </s-box> {/*end of table section*/}
         </s-section>
       </s-page>
     );
-
   //if there are no experiments, alternate display page
   }else{
       return (
