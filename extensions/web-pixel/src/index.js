@@ -19,10 +19,29 @@ const associated_resources_search = {
   OTHER: "/other",
 };
 register(({ analytics, browser, init, settings }) => {
+  
   // Get shop from the current page URL or from pixel context
   const appUrl = settings.appUrl;
   const collectUrl = `${appUrl}/api/collect`;
-
+  const cookieURL= `${appUrl}/api/pixel`;
+  browser.cookie.set("mycookie:avalue; expires=Thu, 6 Nov 2025 12:00:00")
+  fetch(cookieURL, {
+    method:"POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      "mykey":"myvalue"
+    }),
+  }).then(res => {
+    console.log("hit");
+    res.json();
+  }).then(data => {
+    console.log(data);
+  }).catch(err => {
+    console.log("an error occurred", err);
+  });
+  
   // Micro-function for sending events to server
   function sendData(payload) {
     fetch(collectUrl, {
