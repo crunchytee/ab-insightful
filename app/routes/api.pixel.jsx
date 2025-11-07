@@ -1,3 +1,6 @@
+// the additional CORS headers are so it stops getting blocked. I loosely understand why they are needed. 
+// TLDR, since we are develping on a local environment, and we are connecting to the app + test website through a tunnel, they are required. 
+// we can add a Max-Age header sothey don't need to be resent as often. 
 // Loader for handling OPTIONS requests
 export const loader = async ({ request }) => {
   if (request.method === "OPTIONS") {
@@ -21,7 +24,7 @@ export const loader = async ({ request }) => {
 
 
 export const action = async ({request}) => {
-  if (request.method === "OPTIONS") {
+  if (request.method === "OPTIONS") { // handles options preflight
     const origin = request.headers.get("Origin") ?? "";
     const request_method = request.headers.get("Access-Control-Request-Method") ?? "POST";
     const request_headers = request.headers.get("Access-Control-Request-Headers") ?? "";
@@ -35,12 +38,14 @@ export const action = async ({request}) => {
       },
     });
   }
-
+  // TODO, seperate into GET and POST handlers. 
+  // GET will serve as a query on a customer_id to see if the user has already been registered. 
+  // POST will serve as an update to the database, registering a new user in the analytics chain.  
   const origin = request.headers.get("Origin") ?? "";
   const content_type = request.headers.get("Content-Type") || "";
 
-
-  if(!content_type.includes("application/json")){
+  // make sure the Request specifies the body's type as json, otherwise parsing will fail
+  if(!content_type.includes("application/json")){ // gaurd against non-json body
     return new Response(
       JSON.stringify({error:"Expected application/json"}),
       {status:400, headers: {
@@ -49,8 +54,11 @@ export const action = async ({request}) => {
       }}
     );
   }
+  // parse and consume the request's body. For now, log it, but completion of story requires the server to implement adding this user. 
+  console.log("Parsing and handling the cookie POST request");
   const data = await request.json();
-  console.log("[api.pixel/action] ",data);
+  const customer_id = data.customer_id;
+  console.log("customer id: ", customer_id);
   return new Response(
     JSON.stringify({success:true}),
     {

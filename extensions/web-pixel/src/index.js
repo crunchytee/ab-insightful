@@ -19,28 +19,53 @@ const associated_resources_search = {
   OTHER: "/other",
 };
 register(({ analytics, browser, init, settings }) => {
-  
+  // todo, add some sort of client side cache. It seems like on every page view, 
+  // everything defined in here will fire. So we could potentially be hammering our APIs with requests. 
+  // We don't want to send a new request when we already know the user is registered. 
   // Get shop from the current page URL or from pixel context
   const appUrl = settings.appUrl;
+  
   const collectUrl = `${appUrl}/api/collect`;
   const cookieURL= `${appUrl}/api/pixel`;
-  browser.cookie.set("mycookie:avalue; expires=Thu, 6 Nov 2025 12:00:00")
-  fetch(cookieURL, {
-    method:"POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      "mykey":"myvalue"
-    }),
-  }).then(res => {
-    console.log("hit");
-    res.json();
-  }).then(data => {
-    console.log(data);
-  }).catch(err => {
+    
+  // check if our user has a cookie
+  browser.cookie.get("twelfthcookie")
+  .then(cookie => {
+    if(cookie == ""){ // the cookie doesn't exist. We need to register this user
+      let customer_id = init?.data?.customer?.id ?? "invalid id"; // get the customer's ID. 
+      if (customer_id == "invalid id"){
+        console.log("This customer doesn't have an ID. We can't use this to create the cookie. Don't send the request");
+      }
+      else{
+        console.log("About to send the post request for the cookie.")
+        return fetch(cookieURL, {
+          method:"POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            "customer_id":customer_id
+          }),
+          }
+        )
+      }
+    }
+  })
+  .then(res => {
+    // the endpoint is going to return with an 'OK' status, and a body containing the customer ID. At this point, we know its safe to create the cookie, and the user will be registered 
+    return res.json();
+  })
+  .then(data => {
+    console.log("Cookie post request response: ", data);
+  })
+  .catch(err => {
     console.log("an error occurred", err);
   });
+  browser.cookie.set('eleventhcookie=avalue; expires=Mon, 10 Nov 2025 12:00:00 UTC;');
+
+  
+
+
   
   // Micro-function for sending events to server
   function sendData(payload) {
