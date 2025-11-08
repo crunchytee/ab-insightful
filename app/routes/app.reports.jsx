@@ -110,6 +110,7 @@ export default function Reports() {
     };
 
     //filter experiments based on date range
+    //updated to exclude archived experiments
     const filterByDateRange = (start, end) => {
         if (!experiments) return [];
         
@@ -118,6 +119,7 @@ export default function Reports() {
         
         return experiments.filter(exp => {
             if (!exp.startDate) return false;
+            if (exp.status.toLowerCase() === "archived") return false;
             const expStartDate = new Date(exp.startDate);
             return expStartDate >= startDate && expStartDate <= endDate;
         });
