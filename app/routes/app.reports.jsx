@@ -167,7 +167,12 @@ export default function Reports() {
         <>
             {/* custom date range popover */}
             <div style={{ marginRight: '16px'}}>
-                <s-button commandFor="date-range-popover" icon="calendar">Select date range</s-button>
+                <s-button commandFor="date-range-popover" icon="calendar">
+                    {dateRange 
+                        ? `${new Date(dateRange.start).toLocaleDateString()} - ${new Date(dateRange.end).toLocaleDateString()}`
+                        : 'Select date range'
+                    }
+                </s-button>
                 <s-popover id="date-range-popover">
                     <div style={{ display: 'flex' }}>
 
