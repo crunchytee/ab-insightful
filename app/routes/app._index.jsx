@@ -64,6 +64,24 @@ export default function Index() {
   // Button list to navigate to different pages
   return (
     <s-page heading="Welcome to AB Insightful">
+      {/* Header Buttons */}
+      <s-button slot="primary-action"
+       variant="primary"
+       href="/app/experiments/new"
+      > 
+      New Experiment
+      </s-button>
+      <s-button slot="secondary-actions" 
+       href="/app/reports"
+      > 
+      Reports 
+      </s-button>
+      <s-button slot="secondary-actions"
+       href="/app/experiments"
+      > 
+      Manage Experiments 
+      </s-button>
+      
       {/* Begin Setup guide */}
       {visible.setupGuide && (
         <s-section>
