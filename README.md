@@ -2,6 +2,10 @@
 
 ## Quick start
 
+First, remove all records from your database. You can do this by running `prisma migrate reset`. This will drop all data within all tables as well as drop the schema. This is safe for a development environment, and not safe for a production environment.
+
+While the output of `prisma migrate reset` will say it ran a seeding script, it is currently bugged. Run `npx prisma db seed -- --environment development`. You can confirm seeding worked by opening prisma studio.
+
 ### Prerequisites
 
 Before you begin, you'll need the following:

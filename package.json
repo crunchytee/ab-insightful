@@ -21,6 +21,9 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest"
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.10"
