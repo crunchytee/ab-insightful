@@ -19,6 +19,7 @@ export default function Reports() {
     //state variables
     const [showCustom, setShowCustom] = useState(false);
     const [dateRange, setDateRange] = useState(null);
+    const [tempDateRange, setTempDateRange] = useState(null);
     const [filteredExperiments, setFilteredExperiments] = useState(experiments);
 
     //calculate the days since start date
@@ -144,13 +145,20 @@ export default function Reports() {
         }
     };
 
-    //handle custom date picker change
+    //handle custom date picker change (store data temporarily)
     const handleDatePickerChange = (event) => {
         const value = event.target.value;
         if (value && value.includes('--')) {
             const [start, end] = value.split('--');
-            setDateRange({ start, end });
-            setFilteredExperiments(filterByDateRange(start, end));
+            setTempDateRange({ start, end });
+        }
+    };
+
+    //handle save button click (apply the date range)
+    const handleSaveDateRange = () => {
+        if (tempDateRange) {
+            setDateRange(tempDateRange);
+            setFilteredExperiments(filterByDateRange(tempDateRange.start, tempDateRange.end));
         }
     };
 
@@ -190,6 +198,14 @@ export default function Reports() {
                                 type="range"
                                 onChange={handleDatePickerChange}
                             />
+                            <div style={{ padding: '12px', borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                <s-button commandFor="custom-date-popover" variant="secondary">
+                                    Cancel
+                                </s-button>
+                                <s-button onClick={handleSaveDateRange} commandFor="custom-date-popover">
+                                    Save
+                                </s-button>
+                            </div>
                         </s-popover>
                     </div>
                 )}
