@@ -58,11 +58,22 @@ export const action = async ({request}) => {
   console.log("Parsing and handling the cookie POST request");
   const data = await request.json();
   const customer_id = data.customer_id;
+  const device_type = data.device_type;
+  
   console.log("customer id: ", customer_id);
-  return new Response(
-    JSON.stringify({success:true}),
+  console.log("device_type: ", device_type);
+  // create a new record in the database
+  const {createUser} = await import("../services/cookie.server");
+  const user = await createUser(data);
+  if(user){
+      return new Response(
+    JSON.stringify(
+      {
+      data: user
+      }
+  ),
     {
-      status:200,
+      status:201,
        headers: 
           {
             "Content-Type": "application/json",
@@ -70,5 +81,25 @@ export const action = async ({request}) => {
           }
     }
   );
+  }
+  else{
+    return new Response(
+      JSON.stringify(
+        {
+          error: "Could not create user." // i need to come up with a more descriptive error message
+        }
+      ),
+      {
+        status: 500,
+        headers:
+          {
+           "Content-Type": "application/json",
+           "Access-Control-Allow-Origin": origin 
+          }
+      }
+    );
+  }
+  
+
 
 };
