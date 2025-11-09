@@ -2,6 +2,10 @@
 
 ## Quick start
 
+First, remove all records from your database. You can do this by running `prisma migrate reset`. This will drop all data within all tables as well as drop the schema. This is safe for a development environment, and not safe for a production environment.
+
+While the output of `prisma migrate reset` will say it ran a seeding script, it is currently bugged. Run `npx prisma db seed -- --environment development`. You can confirm seeding worked by opening prisma studio.
+
 ### Prerequisites
 
 Before you begin, you'll need the following:
@@ -73,6 +77,14 @@ This template comes pre-configured with examples of:
 3. Responding to webhooks. Please see [/app/routes/webhooks.tsx](https://github.com/Shopify/shopify-app-template-react-router/blob/main/app/routes/webhooks.app.uninstalled.tsx).
 
 Please read the [documentation for @shopify/shopify-app-react-router](https://shopify.dev/docs/api/shopify-app-react-router) to see what other API's are available.
+
+## Testing
+
+To setup your dev environment for testing, run `npm install`. To run your tests, run `npm run test`. To run your tests in 'watch' mode, run `npm run test:watch`.
+
+### Writing Tests
+
+Follow the examples posted in the discord for the general structure of tests. All your tests should be placed in `app/__tests__/`.
 
 ## Shopify Dev MCP
 
