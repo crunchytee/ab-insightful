@@ -15,7 +15,8 @@ export const action = async ({ request }) => {
   const sectionId = (formData.get("sectionId") || "").trim();
   const goalValue = (formData.get("goal") || "").trim();
   const endCondition = (formData.get("endCondition") || "").trim();
-  const endDateStr = (formData.get("endDate") || "").trim();
+  const startDateUTC = (formData.get("startDateUTC") || "").trim();
+  const endDateUTC = (formData.get("endDateUTC") || "").trim();
   const trafficSplitStr = (formData.get("trafficSplit") || "50").trim(); // Default to "0"
 
   // Storage Validation Errors
@@ -24,9 +25,11 @@ export const action = async ({ request }) => {
   if (!description) errors.description = "Description is required";
   if (!sectionId) errors.sectionId = "Section Id is required"; //Todo: Is sectionId still required?
 
-  // Only validates endDate if endCondition is 'End date'
-  if (endCondition == "End date" && !endDateStr) {
-    errors.endDate = "End Date is required when 'End date' is selected";
+  if (!startDateUTC) {
+    errors.startDate = "Start date is required";
+  }
+  if (endCondition === "endDate" && !endDateUTC) {
+    errors.endDate = "End date is required when 'End date' is selected";
   }
 
   if (Object.keys(errors).length) return { errors };
@@ -61,9 +64,11 @@ export const action = async ({ request }) => {
   // Convert form data strings to schema-ready types
   const goalId = goalRecord.id;
   const trafficSplit = parseFloat(trafficSplitStr) / 100.0;
+
   // Converts the date string to a Date object for Prisma
   // If no date was provided, set to null
-  const endDate = endDateStr ? new Date(endDateStr) : null;
+  const startDate = new Date(startDateUTC);
+  const endDate = endDateUTC ? new Date(endDateUTC) : null;
 
   // Assembles the final data object for Prisma
   const experimentData = {
@@ -72,6 +77,7 @@ export const action = async ({ request }) => {
     status: "draft",
     trafficSplit: trafficSplit,
     endCondition: endCondition,
+    startDate: startDate,
     endDate: endDate,
     sectionId: sectionId,
     project: {
@@ -306,13 +312,22 @@ export default function CreateExperiment() {
 
   const handleExperimentCreate = async () => {
     // creates data object for all current state variables
+
+    // Before submitting, we must convert local time to UTC time for DB storage
+    const localStartDateTime = `${startDate}T${startTime || "00:00"}`; // Default to midnight if no time
+    const localEndDateTime = `${endDate}T${endTime || "00:00"}`; // This is in ISO-8061 format https://en.wikipedia.org/wiki/ISO_8601
+
+    const startDateUTC = new Date(localStartDateTime).toISOString();
+    const endDateUTC = endDate ? new Date(localEndDateTime).toISOString() : ""; // endDate is optional  
+    
     const experimentData = {
       name: name,
       description: description,
       sectionId: sectionId,
-      goal: goalSelected, // holds the "view-page" value
-      endCondition: endSelected, // holds "Manual", "End Data"
-      endDate: endDate, // The date string from s-date-field
+      goal: goalSelected,             // holds the "view-page" value
+      endCondition: endSelected,      // holds "Manual", "End Data"
+      startDateUTC: startDateUTC,     // The date string from s-date-field
+      endDateUTC: endDateUTC,         // The date string from s-date-field
       trafficSplit: experimentChance, // 0-100 value
     };
 
@@ -355,25 +370,26 @@ export default function CreateExperiment() {
   };
 
   // validating picked dates, throws error for past dates
-  const handleDateChange = (field, e) => {
+  const handleDateChange = (field, value) => {
+    // Updates the state so the field reflects picked date
+    if (field === "start") {
+      setStartDate(value);
+    } else if (field === "end") {
+      setEndDate(value);
+    }
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const selectedDate = new Date(e);
-    selectedDate.setHours(0, 0, 0, 0);
-    const isValid = selectedDate > today;
+    
+    // Uses local midnight for comparison 
+    const selectedDate = new Date(`${value}T00:00:00`);
+    const isValid = selectedDate >= today;
+    const errorMsg = isValid ? "" : "Date must be in the future";
 
     if (field === "start") {
-      setStartDateError(isValid ? "" : "Date must be in the future");
+      setStartDateError(errorMsg);
     } else if (field === "end") {
-      setEndDateError(isValid ? "" : "Date must be in the future");
-    }
-
-    if (isValid) {
-      if (field === "start") {
-        setStartDate(e.target.value);
-      } else if (field === "end") {
-        setEndDate(e.target.value);
-      }
+      setEndDateError(errorMsg);
     }
   };
 
@@ -680,7 +696,6 @@ export default function CreateExperiment() {
                   error={startDateError}
                   required
                   onChange={(e) => {
-                    setStartDate(e.target.value);
                     handleDateChange("start", e.target.value);
                   }}
                 />
@@ -719,10 +734,9 @@ export default function CreateExperiment() {
                   placeholder="Select end date"
                   value={endDate}
                   error={endDateError}
-                  required
+                  required // To be removed, since 'endDate' is only required if endCondition is 'End date'
                   onChange={(e) => {
                     //listens and passes picked time to validate
-                    setEndDate(e.target.value);
                     handleDateChange("end", e.target.value);
                   }}
                 />
