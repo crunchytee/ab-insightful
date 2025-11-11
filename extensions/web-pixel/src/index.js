@@ -71,7 +71,7 @@ register(({ analytics, browser, init, settings }) => {
       if (customer_id == "") { // TODO need to add a way to create a customer id, so we can track people with no account. My guess is we fallback to the browser's cookie API. 
         throw new Error("User has no ID. They likely don't have an account."); // for now, throw and catch. 
       } else {
-        console.log("performing cookie get");
+        console.log("performing cookie get with url: ",cookieAPIURL +"?"+new URLSearchParams({ customer_id: customer_id }).toString());
         return fetch( // check to see if the user exists within the database
           cookieAPIURL +"?"+
             new URLSearchParams({ customer_id: customer_id }).toString(),
@@ -87,16 +87,21 @@ register(({ analytics, browser, init, settings }) => {
             throw new Error(
               `[web-pixel/index.js] @GET /api/pixel?<customer_id> Error: ${response.status} message: ${data}`,
             );
-          } else if (response.status == 404) {
+          } 
+          else if(response.status == 400){
+            console.log("I sent a bad request!!!");
+          }
+          else if (response.status == 404) {
             // user is not known to the database. post, and create the cookie.
+            console.log("@index.js server couldn't find that user!About to perform the post", JSON.stringify({shopifyCustomerID: customer_id, device_type:device_type,}));
             return fetch(cookieAPIURL, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                customer_id: customer_id,
-                device_type: device_type,
+                shopifyCustomerID: customer_id,
+                deviceType: device_type,
               }),
             })
               .then(async (response) => {
@@ -108,7 +113,7 @@ register(({ analytics, browser, init, settings }) => {
               })
               .then((data) => { // user was found. create the cookie. 
                 browser.cookie.set(
-                  `${cookie_name}=${data.customer_id}; expires=${addDays(Date.now(), 20)};`, // set the cookie to expire 20 days from now.
+                  `${cookie_name}=${data.customer_id}; expires=${addDays(new Date(), 20)};`, // set the cookie to expire 20 days from now.
                 );
               });
           }

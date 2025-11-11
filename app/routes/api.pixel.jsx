@@ -19,6 +19,60 @@ export const loader = async ({ request }) => {
       },
     });
   }
+  else if(request.method === "GET"){
+
+    const origin = request.headers.get("Origin") ?? "";
+    const request_method = request.headers.get("Access-Control-Request-Method") ?? "POST";
+    const request_headers = request.headers.get("Access-Control-Request-Headers") ?? "";
+    const {getUserbyID} = await import("../services/cookie.server");
+    let url = new URL(request.url);
+    let customer_id = url.searchParams.get("customer_id")??"";
+    if(customer_id == ""){
+      return new Response(JSON.stringify({
+        error: "must supply an id",
+      }),
+        {
+          status: 400,
+          headers: {
+        "Access-Control-Allow-Origin": origin, // or specific domain
+        "Access-Control-Allow-Methods": `${request_method}, OPTIONS`,
+        "Access-Control-Allow-Headers":  request_headers ||"Content-Type",
+        "Access-Control-Allow-Private-Network": "true"
+      },
+        }
+      );
+    }
+    const user = await getUserbyID(customer_id);
+    console.log("user from getUserbyID: ", user);
+    console.log("type of user: ", typeof user);
+    if(!user){
+      console.log("could not find user! ", customer_id);
+      return new Response(null,
+        {
+          status: 404,
+          headers: {
+        "Access-Control-Allow-Origin": origin, // or specific domain
+        "Access-Control-Allow-Methods": `${request_method}, OPTIONS`,
+        "Access-Control-Allow-Headers":  request_headers ||"Content-Type",
+        "Access-Control-Allow-Private-Network": "true"
+      },
+        }
+      );
+    }
+
+    console.log('found a user!', user);
+    return new Response(JSON.stringify({
+      ...user
+    }), {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": origin, // or specific domain
+        "Access-Control-Allow-Methods": `${request_method}, OPTIONS`,
+        "Access-Control-Allow-Headers":  request_headers ||"Content-Type",
+        "Access-Control-Allow-Private-Network": "true"
+      },
+    });
+  }
   return null;
 };
 
@@ -34,11 +88,11 @@ export const action = async ({request}) => {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": `${request_method}, OPTIONS`,
         "Access-Control-Allow-Headers": request_headers || "Content-Type",
-        "Access-Control-Request-Private-Network": "true"
+        "Access-Control-Allow-Private-Network": "true"
       },
     });
   }
-  else if(request.methods === "POST"){
+  else if(request.method === "POST"){
     const origin = request.headers.get("Origin") ?? "";
   const content_type = request.headers.get("Content-Type") || "";
 
@@ -55,19 +109,20 @@ export const action = async ({request}) => {
   // parse and consume the request's body. For now, log it, but completion of story requires the server to implement adding this user. 
   console.log("Parsing and handling the cookie POST request");
   const data = await request.json();
-  const customer_id = data.customer_id;
-  const device_type = data.device_type;
+  const customer_id = data.shopifyCustomerID;
+  const device_type = data.deviceType;
   
   console.log("customer id: ", customer_id);
   console.log("device_type: ", device_type);
   // create a new record in the database
   const {createUser} = await import("../services/cookie.server");
   const user = await createUser(data);
+  console.log(`POST @api/pixel\nuser:\n${user}`);
   if(user){
       return new Response(
     JSON.stringify(
       {
-      data: user
+      ...user
       }
   ),
     {
@@ -114,7 +169,7 @@ export const action = async ({request}) => {
   // parse and consume the request's body. For now, log it, but completion of story requires the server to implement adding this user. 
   console.log("Parsing and handling the cookie POST request");
   const data = await request.json();
-  const customer_id = data.customer_id;
+  const customer_id = data.shopifyCustomerID;
   const latestSession = data.latestSession;
   if(!customer_id || !latestSession){ 
     return new Response(
@@ -172,7 +227,6 @@ export const action = async ({request}) => {
   // GET will serve as a query on a customer_id to see if the user has already been registered. 
   // POST will serve as an update to the database, registering a new user in the analytics chain.  
   
-  
-
-
 };
+
+
