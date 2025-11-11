@@ -38,10 +38,8 @@ export const action = async ({request}) => {
       },
     });
   }
-  // TODO, seperate into GET and POST handlers. 
-  // GET will serve as a query on a customer_id to see if the user has already been registered. 
-  // POST will serve as an update to the database, registering a new user in the analytics chain.  
-  const origin = request.headers.get("Origin") ?? "";
+  else if(request.methods === "POST"){
+    const origin = request.headers.get("Origin") ?? "";
   const content_type = request.headers.get("Content-Type") || "";
 
   // make sure the Request specifies the body's type as json, otherwise parsing will fail
@@ -99,6 +97,81 @@ export const action = async ({request}) => {
       }
     );
   }
+  }else if(request.method === "PATCH"){
+        const origin = request.headers.get("Origin") ?? "";
+  const content_type = request.headers.get("Content-Type") || "";
+
+  // make sure the Request specifies the body's type as json, otherwise parsing will fail
+  if(!content_type.includes("application/json")){ // gaurd against non-json body
+    return new Response(
+      JSON.stringify({error:"Expected application/json"}),
+      {status:400, headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": origin
+      }}
+    );
+  }
+  // parse and consume the request's body. For now, log it, but completion of story requires the server to implement adding this user. 
+  console.log("Parsing and handling the cookie POST request");
+  const data = await request.json();
+  const customer_id = data.customer_id;
+  const latestSession = data.latestSession;
+  if(!customer_id || !latestSession){ 
+    return new Response(
+      JSON.stringify(
+        {
+          error: "request was missing 'data' or 'customer id'"
+        }
+      ),
+      {
+        status: 400,
+        headers:
+          {
+           "Content-Type": "application/json",
+           "Access-Control-Allow-Origin": origin 
+          }
+      }
+    );
+  }
+  const {updateLatestSession} = await import('../services/cookie.server');
+  const updated_user = await updateLatestSession(data);
+  if(!updated_user){
+        return new Response(
+      JSON.stringify(
+        {
+          error: "Could not update user." // i need to come up with a more descriptive error message
+        }
+      ),
+      {
+        status: 500,
+        headers:
+          {
+           "Content-Type": "application/json",
+           "Access-Control-Allow-Origin": origin 
+          }
+      }
+    );
+  }
+  else{
+    return new Response(
+      JSON.stringify({
+        ...updated_user
+      }),
+      {
+        status: 200,
+                headers:
+          {
+           "Content-Type": "application/json",
+           "Access-Control-Allow-Origin": origin 
+          }
+      }
+    );
+  }
+  }
+  // TODO, seperate into GET and POST handlers. 
+  // GET will serve as a query on a customer_id to see if the user has already been registered. 
+  // POST will serve as an update to the database, registering a new user in the analytics chain.  
+  
   
 
 

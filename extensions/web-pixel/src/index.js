@@ -63,24 +63,29 @@ register(({ analytics, browser, init, settings }) => {
   const cookie_name = "exp_table_identification_cookie";
   const collectUrl = `${appUrl}/api/collect`;
   const cookieAPIURL = `${appUrl}/api/pixel`;
-  browser.cookie.get(cookie_name).then(async (cookie) => {
+  // below is a refactor of the block-commented code. 
+  let customer_id = init?.data?.customer?.id ?? "";
+ 
+  browser.cookie.get(cookie_name).then((cookie) => {
     if (cookie == "") {
-      let customer_id = init?.data?.customer?.id ?? "";
-      if (customer_id == "") {
-        throw new Error("User has no ID. They likely don't have an account.");
+      if (customer_id == "") { // TODO need to add a way to create a customer id, so we can track people with no account. My guess is we fallback to the browser's cookie API. 
+        throw new Error("User has no ID. They likely don't have an account."); // for now, throw and catch. 
       } else {
-        return fetch(
-          cookieAPIURL +
+        console.log("performing cookie get");
+        return fetch( // check to see if the user exists within the database
+          cookieAPIURL +"?"+
             new URLSearchParams({ customer_id: customer_id }).toString(),
           {
             method: "GET",
           },
         ).then(async (response) => {
-          if (response.status == 500) {
+          // a note on error handling: 
+          // a 404 is not a critical error, and is sometimes expected to happen. Thus, only 500s are treated as critical errors. 
+          if (response.status == 500) { 
             // an error occurred, throw and catch with the server's message.
             const data = await response.text();
             throw new Error(
-              `[web-pixel/index.js] Error: ${response.status} message: ${data}`,
+              `[web-pixel/index.js] @GET /api/pixel?<customer_id> Error: ${response.status} message: ${data}`,
             );
           } else if (response.status == 404) {
             // user is not known to the database. post, and create the cookie.
@@ -94,21 +99,46 @@ register(({ analytics, browser, init, settings }) => {
                 device_type: device_type,
               }),
             })
-              .then((response) => {
-                if (response.status == 500) {
-                  throw new Error(`error: ${response.status}`);
+              .then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) {
+                  throw new Error(`error @POST /api/cookie: ${response.status}, message: ${data}`);
                 }
-                return response.json();
+                return data;
               })
-              .then((data) => {
+              .then((data) => { // user was found. create the cookie. 
                 browser.cookie.set(
-                  `user_id_exptable=${data.customer_id}; expires=${addDays(Date.now(), 20)};`, // set the cookie to expire 20 days from now.
+                  `${cookie_name}=${data.customer_id}; expires=${addDays(Date.now(), 20)};`, // set the cookie to expire 20 days from now.
                 );
               });
           }
         });
-      }
+      } 
+    }else{ // a cookie exists. Send a PATCH to the server to update their latestSession
+      return fetch(cookieAPIURL,{
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_id: customer_id,
+          latestSession: Date.now(),
+        })
+      } )
+      .then(async res => {
+        if(!res.ok){
+          const text = await res.text();
+          throw new Error(`@PATCH ${cookieAPIURL}:  Failed to update record with custoemr id:  ${customer_id}. Status: ${res.status}: ${text} `); 
+        }
+        return res.json();
+      })
+      .then(data => { // what should i do now? 
+        console.log(`updated user with id: ${customer_id}\n data: \n${data}`);
+      })
     }
+  })
+  .catch(error => {
+    console.log("an error occurred: ", error);
   });
   /*
   // check if our user has a cookie
