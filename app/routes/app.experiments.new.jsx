@@ -110,6 +110,7 @@ function TimeSelect({
   label = "Select time",
   value,
   onChange,
+  error,
   invalidMessage = 'Enter a time like "1:30 PM" or "13:30"',
 }) {
   //variable declaration, unique id reference setup
@@ -183,6 +184,7 @@ function TimeSelect({
         icon="clock"
         defaultValue={value ? labelFor(value) : ""}
         placeholder="Choose a time"
+        error={error}
         onFocus={(e) => openPopover(e.currentTarget.parentElement)}
         onClick={(e) => openPopover(e.currentTarget.parentElement)}
         onInput={(e) => e.currentTarget.removeAttribute("error")}
@@ -284,6 +286,55 @@ function parseUserTime(input) {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+function validateStartIsInFuture(startDateStr, startTimeStr) {
+  let dateError = "";
+  let timeError = "";
+
+  if (!startDateStr){
+    return {dateError, timeError}; 
+  } 
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const selectedDate = new Date(`${startDateStr}T00:00:00`);
+  
+  if (selectedDate < today){
+    dateError = "Start date cannot be in the past";
+    return { dateError, timeError : "" };
+  }
+
+  const isToday = selectedDate.getTime() === today.getTime();
+
+  if (isToday && startTimeStr) {
+    const startDateTime = new Date(`${startDateStr}T${startTimeStr}`);
+    const now = new Date(); // The *actual* current time
+
+    if (startDateTime <= now) {
+      timeError = "Start time must be in the future";
+    }
+  }
+  return { dateError, timeError };
+};
+
+function validateEndIsAfterStart(
+  startDateStr,
+  startTimeStr,
+  endDateStr,
+  endTimeStr, 
+){
+  if (!startDateStr || !startTimeStr || !endDateStr || !endTimeStr){
+    return "";
+  }
+
+  const startDateTime = new Date(`${startDateStr}T${startTimeStr}`);
+  const endDateTime = new Date(`${endDateStr}T${endTimeStr}`);
+
+  if (endDateTime <= startDateTime){
+    return "End must be after the start time";
+  }
+  return "";
+};
+
 export default function CreateExperiment() {
   //fetcher stores the data in the fields into a form that can be retrieved
   const fetcher = useFetcher();
@@ -309,6 +360,9 @@ export default function CreateExperiment() {
   const [startDateError, setStartDateError] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [startTimeError, setStartTimeError] = useState("");
+  const [endTimeError, setEndTimeError] = useState("");
+
 
   const handleExperimentCreate = async () => {
     // creates data object for all current state variables
@@ -370,27 +424,71 @@ export default function CreateExperiment() {
   };
 
   // validating picked dates, throws error for past dates
-  const handleDateChange = (field, value) => {
+  const handleDateChange = (field, newDate) => {
     // Updates the state so the field reflects picked date
     if (field === "start") {
-      setStartDate(value);
-    } else if (field === "end") {
-      setEndDate(value);
+      setStartDate(newDate);
+      
+      // validate start date and time
+      const { dateError, timeError } = validateStartIsInFuture(newDate, startTime);
+      setStartDateError(dateError);
+      setStartTimeError(timeError);
+      
+      // if start is valid, clear any old end errors
+      if (!dateError && !timeError) {
+        const endError = validateEndIsAfterStart(
+          newDate,
+          startTime,
+          endDate,
+          endTime,
+        );
+        setEndDateError("");
+        setEndTimeError(endError);
     }
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Uses local midnight for comparison 
-    const selectedDate = new Date(`${value}T00:00:00`);
-    const isValid = selectedDate >= today;
-    const errorMsg = isValid ? "" : "Date must be in the future";
+    } else if (field === "end") {
+      setEndDate(newDate);
 
-    if (field === "start") {
-      setStartDateError(errorMsg);
-    } else if (field === "end") {
-      setEndDateError(errorMsg);
+      const endError = validateEndIsAfterStart(
+        startDate,
+        startTime,
+        newDate,
+        endTime,
+      );
+      setEndDateError(endError); 
+      setEndTimeError("");
     }
+  };
+
+  const handleStartTimeChange = (newStartTime) => {
+    setStartTime(newStartTime);
+
+    const { dateError, timeError } = validateStartIsInFuture(startDate, newStartTime);
+    setStartDateError(dateError);
+    setStartTimeError(timeError); 
+
+  if (!dateError && !timeError) {
+    const endError = validateEndIsAfterStart(
+      startDate,
+      newStartTime,
+      endDate,
+      endTime,
+    );
+    setEndDateError("");
+    setEndTimeError(endError);
+  }
+};
+
+  const handleEndTimeChange = (newEndTime) => {
+    setEndTime(newEndTime);
+    // Re-validate end time
+    const endError = validateEndIsAfterStart(
+      startDate,
+      startTime,
+      endDate,
+      newEndTime,
+    );
+    setEndDateError("");       
+    setEndTimeError(endError); 
   };
 
   const handleVariant = () => {
@@ -706,7 +804,8 @@ export default function CreateExperiment() {
                   id="startTimeSelect"
                   label="Start Time"
                   value={startTime}
-                  onChange={setStartTime}
+                  onChange={handleStartTimeChange}
+                  error={startTimeError}
                 />
               </s-box>
             </s-stack>
@@ -747,7 +846,8 @@ export default function CreateExperiment() {
                   id="endTimeSelect"
                   label="End Time"
                   value={endTime}
-                  onChange={setEndTime}
+                  onChange={handleEndTimeChange}
+                  error={endTimeError}
                 />
               </s-box>
             </s-stack>
@@ -764,4 +864,4 @@ export default function CreateExperiment() {
       </div>
     </s-page>
   );
-}
+};
