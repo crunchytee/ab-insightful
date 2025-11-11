@@ -18,69 +18,129 @@ const associated_resources_search = {
   PAGE: "/pages",
   OTHER: "/other",
 };
+function addDays(date, days) {
+  // addds days to a date.
+  date.setDate(date.getDate() + days);
+  return date;
+}
 
-const IPAD= /(?=.*iPad)(?=.*Mac OS).*/gmi;
-const   OTHER_TABLET= /(?=.*linux)(?=.*Android).*/gmi;
-const   ANDROID_MOBILE= /(?=.*Linux)(?=.*Android).*|(?=.*Pixel).*|(?=.*SM-).*/gmi;
-const   APPLE_DESKTOP= /(?=.*Macintosh)(?=.*Mac OS).*/gmi;
-const   WINDOWS_DESKTOP= /(?=.*Windows)(?=.*Win64).*/gmi; 
-const   LINUX_DESKTOP= /(?=.*Ubuntu)(?=.*Linux).*/gmi;
-
+function detectDeviceType(s) {
+  const IPAD = /(?=.*iPad)(?=.*Mac OS).*/gim;
+  const OTHER_TABLET = /(?=.*linux)(?=.*Android).*/gim;
+  const ANDROID_MOBILE =
+    /(?=.*Linux)(?=.*Android).*|(?=.*Pixel).*|(?=.*SM-).*/gim;
+  const APPLE_DESKTOP = /(?=.*Macintosh)(?=.*Mac OS).*/gim;
+  const WINDOWS_DESKTOP = /(?=.*Windows)(?=.*Win64).*/gim;
+  const LINUX_DESKTOP = /(?=.*Ubuntu)(?=.*Linux).*/gim;
+  if (IPAD.test(s)) {
+    return "ipad";
+  } else if (OTHER_TABLET.test(s)) {
+    return "other_tablet";
+  } else if (ANDROID_MOBILE.test(s)) {
+    return "android_mobile";
+  } else if (APPLE_DESKTOP.test(s)) {
+    return "apple_desktop";
+  } else if (WINDOWS_DESKTOP.test(s)) {
+    return "windows_desktop";
+  } else if (LINUX_DESKTOP.test(s)) {
+    return "linux_desktop";
+  } else {
+    return "UNRECOGNIZED_DEVICE_TYPE";
+  }
+}
 register(({ analytics, browser, init, settings }) => {
-  // todo, add some sort of client side cache. It seems like on every page view, 
-  // everything defined in here will fire. So we could potentially be hammering our APIs with requests. 
-  // We don't want to send a new request when we already know the user is registered. 
+  // todo, add some sort of client side cache. It seems like on every page view,
+  // everything defined in here will fire. So we could potentially be hammering our APIs with requests.
+  // We don't want to send a new request when we already know the user is registered.
   // Get shop from the current page URL or from pixel context
-  
-  // get device type. sniff the User-Agent String using the above regex patterns.  
+
+  // get device type. sniff the User-Agent String using the above regex patterns.
   const user_agent_string = init.context.navigator.userAgent ?? "";
-  console.log("user agent string: " ,user_agent_string);
-  let device_type = "";
-  if(IPAD.test(user_agent_string)){
-    device_type = "ipad";
-  }
-  else if(OTHER_TABLET.test(user_agent_string)){
-    device_type = "other_tablet";
-  }
-  else if(ANDROID_MOBILE.test(user_agent_string)){
-    device_type = "android_mobile";
-  }
-  else if(APPLE_DESKTOP.test(user_agent_string)){
-    device_type = "apple_desktop";
-  }
-  else if(WINDOWS_DESKTOP.test(user_agent_string)){
-    device_type = "windows_desktop";
-  }
-  else if(LINUX_DESKTOP.test(user_agent_string)){
-    device_type = "linux_desktop";
-  }
-  else{
-    device_type = "UNRECOGNIZED_DEVICE_TYPE";
-  }
-  console.log("device typeL ", device_type);
+  console.log("user agent string: ", user_agent_string);
+  const device_type = detectDeviceType(user_agent_string);
+  console.log("device type ", device_type);
   const appUrl = settings.appUrl;
-  
+  const cookie_name = "exp_table_identification_cookie";
   const collectUrl = `${appUrl}/api/collect`;
-  const cookieURL= `${appUrl}/api/pixel`;
-  
-  // check if our user has a cookie
-  browser.cookie.get("user_id_exptable")
-  .then(cookie => {
-    if(cookie == ""){ // the cookie doesn't exist. We need to register this user
-      let customer_id = init?.data?.customer?.id ?? "invalid id"; // get the customer's ID. 
-      if (customer_id == "invalid id"){
-        console.log("This customer doesn't have an ID. We can't use this to create the cookie. Don't send the request");
+  const cookieAPIURL = `${appUrl}/api/pixel`;
+  browser.cookie.get(cookie_name).then(async (cookie) => {
+    if (cookie == "") {
+      let customer_id = init?.data?.customer?.id ?? "";
+      if (customer_id == "") {
+        throw new Error("User has no ID. They likely don't have an account.");
+      } else {
+        return fetch(
+          cookieAPIURL +
+            new URLSearchParams({ customer_id: customer_id }).toString(),
+          {
+            method: "GET",
+          },
+        ).then(async (response) => {
+          if (response.status == 500) {
+            // an error occurred, throw and catch with the server's message.
+            const data = await response.text();
+            throw new Error(
+              `[web-pixel/index.js] Error: ${response.status} message: ${data}`,
+            );
+          } else if (response.status == 404) {
+            // user is not known to the database. post, and create the cookie.
+            return fetch(cookieAPIURL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                customer_id: customer_id,
+                device_type: device_type,
+              }),
+            })
+              .then((response) => {
+                if (response.status == 500) {
+                  throw new Error(`error: ${response.status}`);
+                }
+                return response.json();
+              })
+              .then((data) => {
+                browser.cookie.set(
+                  `user_id_exptable=${data.customer_id}; expires=${addDays(Date.now(), 20)};`, // set the cookie to expire 20 days from now.
+                );
+              });
+          }
+        });
       }
-      else{
-        // first, check with the server to see if the user already exists within the database
-        console.log("[cookie.server.js] About to send GET request for user: ", customer_id);
-        return fetch(cookieURL + new URLSearchParams({customer_id: customer_id,}).toString(),{
-          method: "GET",
-        })
-        .then(response => {
-            if(response.status == 200){ // the user does exist in the database. The server will send information for creating the cookie, and then the pixel will update the "last seen" field in the database.
-              // response should have a body:
-              /*
+    }
+  });
+  /*
+  // check if our user has a cookie
+  browser.cookie
+    .get("user_id_exptable")
+    .then((cookie) => {
+      if (cookie == "") {
+        // the cookie doesn't exist. We need to register this user
+        let customer_id = init?.data?.customer?.id ?? "invalid id"; // get the customer's ID.
+        if (customer_id == "invalid id") {
+          console.log(
+            "This customer doesn't have an ID. We can't use this to create the cookie. Don't send the request",
+          );
+          return;
+        } else {
+          // first, check with the server to see if the user already exists within the database
+          console.log(
+            "[cookie.server.js] About to send GET request for user: ",
+            customer_id,
+          );
+          return fetch(
+            cookieURL +
+              new URLSearchParams({ customer_id: customer_id }).toString(),
+            {
+              method: "GET",
+            },
+          )
+            .then((response) => {
+              if (response.status == 200) {
+                // the user does exist in the database. The server will send information for creating the cookie, and then the pixel will update the "last seen" field in the database.
+                // response should have a body:
+                /*
                 body: {
                   customer_id:customer_id,
                   device_type: device_type,
@@ -89,61 +149,60 @@ register(({ analytics, browser, init, settings }) => {
 
                 }
                 // we should create a cookie with custoemr_id, and then send a PATCH request to update the record with new last_seen and latest_session
-              */
-              return response.json()
-              .then(data => {
-                browser.cookie.set(`user_id_exptable=${data.customer_id}; expires=Mon, 10 Nov 2025 12:00:00 UTC;`);
-                // TODO replace with sending a patch request
-              })
-              .catch(error => {
-                console.log("an error occurred: ", error);
-              });
-            }        
-            else if(response.status == 404){ // the user does not exist in the database, we can consider this to be a new user. Send the post request, and create the cookie
-              console.log("About to send the post request for the cookie.");
-              return fetch(cookieURL, {
-                method:"POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  "customer_id":customer_id,
-                  "device_type": device_type,
-                }),
-                }
-              );         
-            }
-            else{ // an error occurred, likely a 500. 
-              console.log("an error occurred");
-              // TODO replace with proper error handling
-            }
-        })
-        .catch(error => {
-          console.log("An error occurred", error);
-        });
-
+              
+                return response
+                  .json()
+                  .then((data) => {
+                    browser.cookie.set(
+                      `user_id_exptable=${data.customer_id}; expires=${addDays(Date.now(), 20)};`, // set the cookie to expire 20 days from now.
+                    );
+                    // TODO replace with sending a patch request
+                  })
+                  .catch((error) => {
+                    console.log("an error occurred: ", error);
+                  });
+              } else if (response.status == 404) {
+                // the user does not exist in the database, we can consider this to be a new user. Send the post request, and create the cookie
+                console.log("About to send the post request for the cookie.");
+                return fetch(cookieURL, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    customer_id: customer_id,
+                    device_type: device_type,
+                  }),
+                })
+                  .then((response) => {
+                    return response.json();
+                  })
+                  .then((data) => {
+                    browser.cookie.set(
+                      `user_id_exptable=${data.customer_id}; expires=${addDays(Date.now(), 20)};`, // set the cookie to expire 20 days from now.
+                    );
+                  })
+                  .catch((error) => {
+                    console.log(`an error occurred: ${error}`);
+                  });
+              } else {
+                // an error occurred, likely a 500.
+                console.log("an error occurred");
+                // TODO replace with proper error handling
+              }
+            })
+            .catch((error) => {
+              console.log("An error occurred", error);
+            });
+        }
+      } else {
+        // send a PATCH to update the LAST_SEEN
       }
-    }else { // send a PATCH to update the LAST_SEEN
-      
-    }
-  })
-  .then(res => {
-    return res.json();
-  })
-  .then(data => {
-    console.log("Cookie post request response: ", data);
-    
-    
-
-  })
-  .catch(err => {
-    console.log("an error occurred", err);
-  });
-
-  
-
-
-  
+    })
+    .catch((err) => {
+      console.log("an error occurred", err);
+    });
+*/
   // Micro-function for sending events to server
   function sendData(payload) {
     fetch(collectUrl, {
