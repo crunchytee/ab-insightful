@@ -152,6 +152,7 @@ model Variant {
 
 model User {
   id            Int      @id @default(autoincrement()) @map("user_id")
+  shopifyCustomerID String @unique
   firstSeen     DateTime @default(now()) @map("first_seen")
   latestSession DateTime @updatedAt @map("latest_session") // Prisma's @updatedAt automatically handles this
   deviceType    String?  @map("device_type")
