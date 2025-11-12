@@ -95,9 +95,11 @@ export const action = async ({ request }) => {
   // Convert form data strings to schema-ready types
   const goalId = goalRecord.id;
   const trafficSplit = parseFloat(trafficSplitStr) / 100.0;
+  
   // Converts the date string to a Date object for Prisma
   // If no date was provided, set to null
-  const endDate = endDateStr ? new Date(endDateStr) : null;
+  //only set endDate if endCondition is endDate
+  const endDate = isEndDate && endDateStr ? new Date(endDateStr) : null;
 
   //convert stable success probability variables to schema-ready types
   const probabilityToBeBest = probabilityToBeBestStr ? Number(probabilityToBeBestStr) : null;
@@ -129,6 +131,12 @@ export const action = async ({ request }) => {
       ],
     },
   };
+
+  //only add endDate is applicable
+  if (isEndDate) {
+    experimentData.endDate = endDate;
+  }
+
 
   if (isStableSuccessProbability) {
     Object.assign(experimentData, {
@@ -812,73 +820,79 @@ export default function CreateExperiment() {
               </s-stack>
             </s-stack>
 
-            <s-stack direction="inline" gap="base">
-              <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
-                <s-date-field
-                  id="endDateField"
-                  label="End Date"
-                  placeholder="Select end date"
-                  value={endDate}
-                  error={endDateError}
-                  required
-                  onChange={(e) => {
-                    //listens and passes picked time to validate
-                    setEndDate(e.target.value);
-                    handleDateChange("end", e.target.value);
-                  }}
-                />
-              </s-box>
+            {/*only show end date picker if endCondition is 'End date' */}
+            {endCondition === "endDate" && (
+              <s-stack direction="inline" gap="base">
+                <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
+                  <s-date-field
+                    id="endDateField"
+                    label="End Date"
+                    placeholder="Select end date"
+                    value={endDate}
+                    error={endDateError}
+                    required
+                    onChange={(e) => {
+                      //listens and passes picked time to validate
+                      setEndDate(e.target.value);
+                      handleDateChange("end", e.target.value);
+                    }}
+                  />
+                </s-box>
+              
 
-              <s-box flex="1" minInlineSize="220px">
-                <TimeSelect
-                  id="endTimeSelect"
-                  label="End Time"
-                  value={endTime}
-                  onChange={setEndTime}
-                />
-              </s-box>
-            </s-stack>
+                <s-box flex="1" minInlineSize="220px">
+                  <TimeSelect
+                    id="endTimeSelect"
+                    label="End Time"
+                    value={endTime}
+                    onChange={setEndTime}
+                  />
+                </s-box>
+              </s-stack>
+            )}
 
-            <s-stack direction="inline" gap="base">
-              <s-stack flex="1" direction="inline" gap="base" alignItems="start">
-                <s-stack inlineSize="250px">
-                  <s-number-field 
-                    label="Probability to be the best greater than" 
-                    suffix="%" 
-                    inputMode="numeric"
-                    min="50"
-                    max="100"
-                    step="1"
-                    value={probabilityToBeBest}
-                    error={probabilityToBeBestError}
-                    onChange={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
-                    onInput={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
-                    onFocus={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}/>
-                </s-stack>
-                <s-stack inlineSize="100px">
-                  <s-number-field 
-                    label="For at least"
-                    inputMode="numeric"
-                    min="1"
-                    value={duration}
-                    error={durationError}
-                    onChange={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
-                    onInput={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
-                    onFocus={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}/>
-                </s-stack>
-                <s-stack inlineSize="90px" paddingBlockStart="base">
-                  <s-select
-                    error={timeUnitError}
-                    value={timeUnit}
-                    onChange={(e) => {setTimeUnit(e.target.value);}}>
-                    <s-option value="days">Days</s-option>
-                    <s-option value="weeks">Weeks</s-option>
-                    <s-option value="months">Months</s-option>
-                  </s-select>
+            {/*only show stable success probability fields if endCondition is 'Stable Success Probability' */}
+            {endCondition === "stableSuccessProbability" && (
+              <s-stack direction="inline" gap="base">
+                <s-stack flex="1" direction="inline" gap="base" alignItems="start">
+                  <s-stack inlineSize="250px">
+                    <s-number-field 
+                      label="Probability to be the best greater than" 
+                      suffix="%" 
+                      inputMode="numeric"
+                      min="50"
+                      max="100"
+                      step="1"
+                      value={probabilityToBeBest}
+                      error={probabilityToBeBestError}
+                      onChange={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
+                      onInput={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
+                      onFocus={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}/>
+                  </s-stack>
+                  <s-stack inlineSize="100px">
+                    <s-number-field 
+                      label="For at least"
+                      inputMode="numeric"
+                      min="1"
+                      value={duration}
+                      error={durationError}
+                      onChange={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
+                      onInput={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
+                      onFocus={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}/>
+                  </s-stack>
+                  <s-stack inlineSize="90px" paddingBlockStart="base">
+                    <s-select
+                      error={timeUnitError}
+                      value={timeUnit}
+                      onChange={(e) => {setTimeUnit(e.target.value);}}>
+                      <s-option value="days">Days</s-option>
+                      <s-option value="weeks">Weeks</s-option>
+                      <s-option value="months">Months</s-option>
+                    </s-select>
+                  </s-stack>
                 </s-stack>
               </s-stack>
-            </s-stack>
-
+            )}
           </s-stack>
         </s-form>
       </s-section>
