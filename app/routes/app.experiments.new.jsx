@@ -1,6 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import db from "../db.server";
 
 // Server side code
@@ -113,27 +113,22 @@ function TimeSelect({
   error,
   invalidMessage = 'Enter a time like "1:30 PM" or "13:30"',
 }) {
-  //variable declaration, unique id reference setup
+  // controlled display value (human readable like "1:30 PM")
   const times = [];
   const popoverId = `${id}-popover`;
-  const inputId = `${id}-input`;
-
-  //logic for making time labels for dropdown menu
+  // build times list once
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
       const hour24 = h.toString().padStart(2, "0");
       const minute = m.toString().padStart(2, "0");
       const value24 = `${hour24}:${minute}`;
-
       const suffix = h >= 12 ? "PM" : "AM";
       const hour12 = ((h + 11) % 12) + 1;
       const label12 = `${hour12}:${minute} ${suffix}`;
-
       times.push({ value: value24, label: label12 });
     }
   }
 
-  //converts 24hr format into 12hr am/pm format for readability, 13:00 or 1300 becomes 1:00 PM
   const labelFor = (hhmm) => {
     if (!hhmm) return "";
     const hit = times.find((t) => t.value === hhmm);
@@ -144,35 +139,25 @@ function TimeSelect({
     return `${h12}:${String(M).padStart(2, "0")} ${am ? "AM" : "PM"}`;
   };
 
-  //updates display in text field
-  const setFieldDisplay = (hhmm) => {
-    const el = document.getElementById(inputId);
-    if (el) {
-      el.value = hhmm ? labelFor(hhmm) : "";
-      el.removeAttribute("error");
-    }
-  };
+  // local display state so we can show the friendly label while remaining controlled
+  const [display, setDisplay] = useState(value ? labelFor(value) : "");
+  useEffect(() => {
+    // sync whenever parent value changes (including when validation sets an error)
+    setDisplay(value ? labelFor(value) : "");
+  }, [value]);
 
-  //sets error, needed to handle separate error handling
-  const setError = (msg) => {
-    const el = document.getElementById(inputId);
-    el?.setAttribute("error", msg);
-  };
-
-  //opens popover on click
   const openPopover = (el) =>
     el?.querySelector(`#${popoverId}Trigger`)?.click();
 
-  //saves typed field, throws error if typed input hasn't been parsed/cleaned
   const commitFromField = (raw) => {
-    const el = document.getElementById(inputId);
     const parsed = parseUserTime(raw);
     if (!parsed) {
-      setError(invalidMessage);
+      // notify parent by passing null / empty so parent can set error string
+      onChange("");
       return;
     }
     onChange(parsed);
-    setFieldDisplay(parsed);
+    setDisplay(labelFor(parsed));
   };
 
   return (
@@ -180,14 +165,14 @@ function TimeSelect({
       {/* This section is what will visually display when the function is called */}
       <s-text-field
         label={label}
-        id={inputId}
+        id={`${id}-input`}
         icon="clock"
-        defaultValue={value ? labelFor(value) : ""}
+        value={display}
         placeholder="Choose a time"
         error={error}
         onFocus={(e) => openPopover(e.currentTarget.parentElement)}
         onClick={(e) => openPopover(e.currentTarget.parentElement)}
-        onInput={(e) => e.currentTarget.removeAttribute("error")}
+        onInput={(e) => setDisplay(e.currentTarget.value)}
         onBlur={(e) => commitFromField(e.currentTarget.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -216,7 +201,7 @@ function TimeSelect({
               commandFor={popoverId}
               onClick={() => {
                 onChange(t.value);
-                setFieldDisplay(t.value);
+                setDisplay(labelFor(t.value));
               }}
             >
               {t.label}
@@ -290,17 +275,17 @@ function validateStartIsInFuture(startDateStr, startTimeStr) {
   let dateError = "";
   let timeError = "";
 
-  if (!startDateStr){
-    return {dateError, timeError}; 
-  } 
+  if (!startDateStr) {
+    return { dateError, timeError };
+  }
 
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
   const selectedDate = new Date(`${startDateStr}T00:00:00`);
-  
-  if (selectedDate < today){
+
+  if (selectedDate < today) {
     dateError = "Start date cannot be in the past";
-    return { dateError, timeError : "" };
+    return { dateError, timeError: "" };
   }
 
   const isToday = selectedDate.getTime() === today.getTime();
@@ -314,26 +299,48 @@ function validateStartIsInFuture(startDateStr, startTimeStr) {
     }
   }
   return { dateError, timeError };
-};
+}
 
 function validateEndIsAfterStart(
   startDateStr,
   startTimeStr,
   endDateStr,
-  endTimeStr, 
-){
-  if (!startDateStr || !startTimeStr || !endDateStr || !endTimeStr){
-    return "";
+  endTimeStr
+) {
+  // return both a date-level error and a time-level error so UI can show the right one
+  let dateError = "";
+  let timeError = "";
+
+  if (!startDateStr || !startTimeStr || !endDateStr || !endTimeStr) {
+    return { dateError, timeError };
   }
 
   const startDateTime = new Date(`${startDateStr}T${startTimeStr}`);
   const endDateTime = new Date(`${endDateStr}T${endTimeStr}`);
 
-  if (endDateTime <= startDateTime){
-    return "End must be after the start time";
+  if (endDateTime <= startDateTime) {
+    const startDateOnly = new Date(`${startDateStr}T00:00:00`);
+    const endDateOnly = new Date(`${endDateStr}T00:00:00`);
+    // if end date precedes start date -> show error on date
+    if (endDateOnly.getTime() < startDateOnly.getTime()) {
+      dateError = "End date must be after the start date";
+    } else {
+      // same day but time invalid -> show error on time
+      timeError = "End must be after the start time";
+    }
   }
-  return "";
-};
+  return { dateError, timeError };
+}
+
+// convert a local date (YYYY-MM-DD) and local time (HH:MM) into a UTC ISO string
+function localDateTimeToISOString(dateStr, timeStr = "00:00") {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const [hh = 0, mm = 0] = (timeStr || "00:00").split(":").map(Number);
+  // construct a local Date from components (guaranteed local interpretation)
+  const local = new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0);
+  return local.toISOString(); // canonical UTC instant
+}
 
 export default function CreateExperiment() {
   //fetcher stores the data in the fields into a form that can be retrieved
@@ -363,6 +370,24 @@ export default function CreateExperiment() {
   const [startTimeError, setStartTimeError] = useState("");
   const [endTimeError, setEndTimeError] = useState("");
 
+// keep all date/time errors in sync whenever any date/time value changes
+  useEffect(() => {
+    const errors = validateAllDateTimes(startDate, startTime, endDate, endTime);
+    if (errors.startDateError !== startDateError) setStartDateError(errors.startDateError);
+    if (errors.startTimeError !== startTimeError) setStartTimeError(errors.startTimeError);
+    if (errors.endDateError !== endDateError) setEndDateError(errors.endDateError);
+    if (errors.endTimeError !== endTimeError) setEndTimeError(errors.endTimeError);
+  }, [startDate, startTime, endDate, endTime]);
+
+  // clear end fields / errors when user switches end condition away from "endDate"
+  useEffect(() => {
+    if (endSelected !== "endDate") {
+      if (endDate !== "") setEndDate("");
+      if (endTime !== "") setEndTime("");
+      if (endDateError !== "") setEndDateError("");
+      if (endTimeError !== "") setEndTimeError("");
+    }
+  }, [endSelected]);
 
   const handleExperimentCreate = async () => {
     // creates data object for all current state variables
@@ -371,8 +396,8 @@ export default function CreateExperiment() {
     const localStartDateTime = `${startDate}T${startTime || "00:00"}`; // Default to midnight if no time
     const localEndDateTime = `${endDate}T${endTime || "00:00"}`; // This is in ISO-8061 format https://en.wikipedia.org/wiki/ISO_8601
 
-    const startDateUTC = new Date(localStartDateTime).toISOString();
-    const endDateUTC = endDate ? new Date(localEndDateTime).toISOString() : ""; // endDate is optional  
+    const startDateUTC = startDate ? localDateTimeToISOString(startDate, startTime) : "";
+    const endDateUTC = endDate ? localDateTimeToISOString(endDate, endTime) : ""; // endDate is optional  
     
     const experimentData = {
       name: name,
@@ -423,72 +448,82 @@ export default function CreateExperiment() {
     setName(v);
   };
 
-  // validating picked dates, throws error for past dates
+  // New centralized validation function
+  const validateAllDateTimes = (
+    startDateVal = startDate,
+    startTimeVal = startTime,
+    endDateVal = endDate,
+    endTimeVal = endTime
+  ) => {
+    let newStartDateError = "";
+    let newStartTimeError = "";
+    let newEndDateError = "";
+    let newEndTimeError = "";
+
+    // Validate start is in future
+    const { dateError: startDErr, timeError: startTErr } = validateStartIsInFuture(
+      startDateVal,
+      startTimeVal
+    );
+    newStartDateError = startDErr;
+    newStartTimeError = startTErr;
+
+    // Validate end is after start (only if both are provided)
+    if (startDateVal && startTimeVal && endDateVal && endTimeVal) {
+      const { dateError: endDErr, timeError: endTErr } = validateEndIsAfterStart(
+        startDateVal,
+        startTimeVal,
+        endDateVal,
+        endTimeVal
+      );
+      newEndDateError = endDErr;
+      newEndTimeError = endTErr;
+    }
+
+    return {
+      startDateError: newStartDateError,
+      startTimeError: newStartTimeError,
+      endDateError: newEndDateError,
+      endTimeError: newEndTimeError,
+    };
+  };
+
+  // Updated handlers using the centralized validation
   const handleDateChange = (field, newDate) => {
     // Updates the state so the field reflects picked date
     if (field === "start") {
       setStartDate(newDate);
-      
-      // validate start date and time
-      const { dateError, timeError } = validateStartIsInFuture(newDate, startTime);
-      setStartDateError(dateError);
-      setStartTimeError(timeError);
-      
-      // if start is valid, clear any old end errors
-      if (!dateError && !timeError) {
-        const endError = validateEndIsAfterStart(
-          newDate,
-          startTime,
-          endDate,
-          endTime,
-        );
-        setEndDateError("");
-        setEndTimeError(endError);
-    }
+      const errors = validateAllDateTimes(newDate, startTime, endDate, endTime);
+      setStartDateError(errors.startDateError);
+      setStartTimeError(errors.startTimeError);
+      setEndDateError(errors.endDateError);
+      setEndTimeError(errors.endTimeError);
     } else if (field === "end") {
       setEndDate(newDate);
-
-      const endError = validateEndIsAfterStart(
-        startDate,
-        startTime,
-        newDate,
-        endTime,
-      );
-      setEndDateError(endError); 
-      setEndTimeError("");
+      const errors = validateAllDateTimes(startDate, startTime, newDate, endTime);
+      setStartDateError(errors.startDateError);
+      setStartTimeError(errors.startTimeError);
+      setEndDateError(errors.endDateError);
+      setEndTimeError(errors.endTimeError);
     }
   };
 
   const handleStartTimeChange = (newStartTime) => {
     setStartTime(newStartTime);
-
-    const { dateError, timeError } = validateStartIsInFuture(startDate, newStartTime);
-    setStartDateError(dateError);
-    setStartTimeError(timeError); 
-
-  if (!dateError && !timeError) {
-    const endError = validateEndIsAfterStart(
-      startDate,
-      newStartTime,
-      endDate,
-      endTime,
-    );
-    setEndDateError("");
-    setEndTimeError(endError);
-  }
-};
+    const errors = validateAllDateTimes(startDate, newStartTime, endDate, endTime);
+    setStartDateError(errors.startDateError);
+    setStartTimeError(errors.startTimeError);
+    setEndDateError(errors.endDateError);
+    setEndTimeError(errors.endTimeError);
+  };
 
   const handleEndTimeChange = (newEndTime) => {
     setEndTime(newEndTime);
-    // Re-validate end time
-    const endError = validateEndIsAfterStart(
-      startDate,
-      startTime,
-      endDate,
-      newEndTime,
-    );
-    setEndDateError("");       
-    setEndTimeError(endError); 
+    const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime);
+    setStartDateError(errors.startDateError);
+    setStartTimeError(errors.startTimeError);
+    setEndDateError(errors.endDateError);
+    setEndTimeError(errors.endTimeError);
   };
 
   const handleVariant = () => {
@@ -833,7 +868,7 @@ export default function CreateExperiment() {
                   placeholder="Select end date"
                   value={endDate}
                   error={endDateError}
-                  required // To be removed, since 'endDate' is only required if endCondition is 'End date'
+                  required={endSelected === "endDate"} // To be removed, since 'endDate' is only required if endCondition is 'End date'
                   onChange={(e) => {
                     //listens and passes picked time to validate
                     handleDateChange("end", e.target.value);
