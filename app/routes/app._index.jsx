@@ -64,6 +64,24 @@ export default function Index() {
   // Button list to navigate to different pages
   return (
     <s-page heading="Welcome to AB Insightful">
+      {/* Header Buttons */}
+      <s-button slot="primary-action"
+       variant="primary"
+       href="/app/experiments/new"
+      > 
+      New Experiment
+      </s-button>
+      <s-button slot="secondary-actions" 
+       href="/app/reports"
+      > 
+      Reports 
+      </s-button>
+      <s-button slot="secondary-actions"
+       href="/app/experiments"
+      > 
+      Manage Experiments 
+      </s-button>
+      
       {/* Begin Setup guide */}
       {visible.setupGuide && (
         <s-section>
@@ -181,50 +199,62 @@ export default function Index() {
       {/* End Setup guide */}
 
       {/* Begin quick links */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 0,
-          maxWidth: 480,
-          borderRadius: 6,
-          background: "#fff",
-          border: "1px solid rgba(0,0,0,0.04)",
-        }}
-      >
-        {[
-          {
-            id: "view-experiments",
-            label: "View Experiments",
-            to: "/app/experiments",
-          },
-          {
-            id: "create-experiment",
-            label: "Create New Experiment",
-            to: "/app/experiments/new",
-          },
-          { id: "reports", label: "Reports", to: "/app/reports" },
-          { id: "settings", label: "Settings", to: "/app/settings" },
-          { id: "help", label: "Help", to: "/app/help" },
-        ].map((item, idx, arr) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => navigate(item.to)}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              border: "none",
-              borderBottom:
-                idx < arr.length - 1 ? "1px solid rgba(0,0,0,0.08)" : "none",
-              background: "transparent",
-              textAlign: "left",
-              cursor: "pointer",
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <s-clickable
+          border="base"
+          padding="base"
+          background="subdued"
+          borderRadius="base"
+          href="/app/experiments"
+          maxInlineSize="650px"
+          maxBlockSize="52px"
+        >
+          <s-heading>View Experiments</s-heading>
+        </s-clickable>
+        <s-clickable
+          border="base"
+          padding="base"
+          background="subdued"
+          borderRadius="base"
+          href="/app/experiments/new"
+          maxInlineSize="650px"
+          maxBlockSize="52px"
+        >
+          <s-heading>Create New Experiment</s-heading>
+        </s-clickable>
+        <s-clickable
+          border="base"
+          padding="base"
+          background="subdued"
+          borderRadius="base"
+          href="/app/reports"
+          maxInlineSize="650px"
+          maxBlockSize="52px"
+        >
+          <s-heading>Reports</s-heading>
+        </s-clickable>
+        <s-clickable
+          border="base"
+          padding="base"
+          background="subdued"
+          borderRadius="base"
+          href="/app/settings"
+          maxInlineSize="650px"
+          maxBlockSize="52px"
+        >
+          <s-heading>Settings</s-heading>
+        </s-clickable>
+        <s-clickable
+          border="base"
+          padding="base"
+          background="subdued"
+          borderRadius="base"
+          href="/app/help"
+          maxInlineSize="650px"
+          maxBlockSize="52px"
+        >
+          <s-heading>Help</s-heading>
+        </s-clickable>
       </div>
       {/* End Quick Links */}
     </s-page>

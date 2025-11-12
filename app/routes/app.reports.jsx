@@ -17,8 +17,8 @@ export default function Reports() {
     const experiments = useLoaderData();
 
     //state variables
-    const [showCustom, setShowCustom] = useState(false);
     const [dateRange, setDateRange] = useState(null);
+    const [tempDateRange, setTempDateRange] = useState(null);
     const [filteredExperiments, setFilteredExperiments] = useState(experiments);
 
     //calculate the days since start date
@@ -109,6 +109,7 @@ export default function Reports() {
     };
 
     //filter experiments based on date range
+    //updated to exclude archived experiments
     const filterByDateRange = (start, end) => {
         if (!experiments) return [];
         
@@ -117,47 +118,43 @@ export default function Reports() {
         
         return experiments.filter(exp => {
             if (!exp.startDate) return false;
+            if (exp.status.toLowerCase() === "archived") return false;
             const expStartDate = new Date(exp.startDate);
             return expStartDate >= startDate && expStartDate <= endDate;
         });
     };
 
     //handle date range selection
-    const handleDateRangeChange = (event) => {
-        const value = event.target.value;
+    const handleDateRangeChange = (value) => {
         const currentDay = getCurrentDate();
-
         if (value === '7') {
             const startDate = getDateDaysAgo(7);
             const newDateRange = { start: startDate, end: currentDay };
             setDateRange(newDateRange);
             setFilteredExperiments(filterByDateRange(startDate, currentDay));
-            setShowCustom(false);
         } else if (value === '30') {
             const startDate = getDateDaysAgo(30);
             const newDateRange = { start: startDate, end: currentDay };
             setDateRange(newDateRange);
             setFilteredExperiments(filterByDateRange(startDate, currentDay));
-            setShowCustom(false);
-        } else if (value === 'custom') {
-            setShowCustom(true);
         }
     };
 
-    //handle custom date picker change
+    //handle custom date picker change (store data temporarily)
     const handleDatePickerChange = (event) => {
         const value = event.target.value;
         if (value && value.includes('--')) {
             const [start, end] = value.split('--');
-            setDateRange({ start, end });
-            setFilteredExperiments(filterByDateRange(start, end));
+            setTempDateRange({ start, end });
         }
     };
 
-    //get default view for date picker (current month)
-    const getDefaultView = () => {
-        const date = new Date();
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    //handle save button click (apply the date range)
+    const handleSaveDateRange = () => {
+        if (tempDateRange) {
+            setDateRange(tempDateRange);
+            setFilteredExperiments(filterByDateRange(tempDateRange.start, tempDateRange.end));
+        }
     };
 
     //initialize with last 30 days 
@@ -170,53 +167,90 @@ export default function Reports() {
 
     return (
         <>
-            <s-stack direction="inline" align="start">
-                <div style={{ width: '120px' , marginRight: '16px'}}>
-                    <s-select label="Date range" onChange={handleDateRangeChange}>
-                        <s-option value="7">Last 7 days</s-option>
-                        <s-option value="30" defaultSelected>Last 30 days</s-option>
-                        <s-option value="custom">Custom</s-option>
-                    </s-select>
-                </div>
-                
-                {showCustom && (
-                     <div style={{ height: '15px', marginTop: '21px'}}>
-                        <s-button commandFor="custom-date-popover" icon="calendar">
-                            Select date range
-                        </s-button>
-                        <s-popover id="custom-date-popover">
+            {/* custom date range popover */}
+            <div style={{ marginRight: '16px'}}>
+                <s-button commandFor="date-range-popover" icon="calendar">
+                    {dateRange 
+                        ? `${new Date(dateRange.start).toLocaleDateString()} - ${new Date(dateRange.end).toLocaleDateString()}`
+                        : 'Select date range'
+                    }
+                </s-button>
+                <s-popover id="date-range-popover">
+                    <div style={{ display: 'flex' }}>
+
+                        {/* left side - 30 days, 7 days */}
+                        <div style={{ 
+                            width: '120px', 
+                            padding: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
+                        }}>
+                            <s-button 
+                               variant="tertiary"
+                                alignment="start"
+                                onClick={() => handleDateRangeChange('7')}
+                                commandFor="date-range-popover"
+                            >
+                                Last 7 days
+                            </s-button>
+                            <s-button 
+                                variant="tertiary"
+                                alignment="start"
+                                onClick={() => handleDateRangeChange('30')}
+                                commandFor="date-range-popover"
+                            >
+                                Last 30 days
+                            </s-button>
+                        </div>
+            
+                        {/* right side - calendar + buttons */}
+                        <div>
                             <s-date-picker
-                                view={getDefaultView()}
                                 type="range"
                                 onChange={handleDatePickerChange}
                             />
-                        </s-popover>
+
+                            {/* confirm/cancel buttons */}
+                            <div style={{ 
+                                padding: '12px', 
+                                display: 'flex', 
+                                justifyContent: 'flex-end', 
+                                gap: '8px' 
+                            }}>
+                                <s-button commandFor="date-range-popover" variant="secondary">
+                                    Cancel
+                                </s-button>
+                                <s-button onClick={handleSaveDateRange} commandFor="date-range-popover" variant="primary" >
+                                    Apply
+                                </s-button>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </s-stack>
-            
-                <div style={{ marginBottom: '16px', marginTop: '16px'}}>
-                    <s-heading>Experiment Reports</s-heading>
-                </div>
-                <s-section>
-                    <s-box  background="base"
-                            border="base"
-                            borderRadius="base"
-                            overflow="hidden">
-                        <s-table>
-                            <s-table-header-row>
-                                <s-table-header listSlot="primary">Experiment Name (Click To View Report)</s-table-header>
-                                <s-table-header listSlot="secondary">Status</s-table-header>
-                                <s-table-header listSlot="labeled">Run Length</s-table-header>
-                                <s-table-header listSlot="labeled" format="numeric">End Condition</s-table-header>
-                                <s-table-header listSlot="labeled" format="numeric">Conversions</s-table-header>
-                            </s-table-header-row>
-                            <s-table-body>
-                                {renderTableData(filteredExperiments)}
-                            </s-table-body>
-                        </s-table>
-                    </s-box>
-                </s-section>
+                </s-popover>
+            </div>
+            <div style={{ marginBottom: '16px', marginTop: '16px'}}>
+                <s-heading>Experiment Reports</s-heading>
+            </div>
+            <s-section>
+                <s-box  background="base"
+                        border="base"
+                        borderRadius="base"
+                        overflow="hidden">
+                    <s-table>
+                        <s-table-header-row>
+                            <s-table-header listSlot="primary">Experiment Name (Click To View Report)</s-table-header>
+                            <s-table-header listSlot="secondary">Status</s-table-header>
+                            <s-table-header listSlot="labeled">Run Length</s-table-header>
+                            <s-table-header listSlot="labeled" format="numeric">End Condition</s-table-header>
+                            <s-table-header listSlot="labeled" format="numeric">Conversions</s-table-header>
+                        </s-table-header-row>
+                        <s-table-body>
+                            {renderTableData(filteredExperiments)}
+                        </s-table-body>
+                    </s-table>
+                </s-box>
+            </s-section>
             <s-page heading="Reports" variant="headingLg"></s-page>
         </>
     );
