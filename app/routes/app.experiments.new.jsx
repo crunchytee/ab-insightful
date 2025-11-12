@@ -44,8 +44,8 @@ export const action = async ({ request }) => {
       const num = Number(probabilityToBeBestStr);
       if (!Number.isInteger(num)) {
         errors.probabilityToBeBest = "Probability must be a whole numer";
-      } else if (num < 50 || num > 100) {
-        errors.probabilityToBeBest = "Probability must be between 50-100";
+      } else if (num < 51 || num > 100) {
+        errors.probabilityToBeBest = "Probability must be between 51-100";
       }
     }
     if (durationStr === "") {
@@ -379,7 +379,7 @@ export default function CreateExperiment() {
       endCondition: endCondition, // holds "Manual", "End Data"
       endDate: endDate, // The date string from s-date-field
       trafficSplit: experimentChance, // 0-100 value
-      probabilityToBeBest: probabilityToBeBest, //holds validated value 50-100
+      probabilityToBeBest: probabilityToBeBest, //holds validated value 51-100
       duration: duration, //length of time for experiment run
       timeUnit: timeUnit,
     };
@@ -422,12 +422,12 @@ export default function CreateExperiment() {
     const isInt = Number.isInteger(num); 
 
     if (field === "probabilityToBeBest") {
-      const inRange = num >= 50 && num <= 100;
+      const inRange = num >= 51 && num <= 100;
       if (isInt && inRange) {
         setProbabilityToBeBest(num);
         setProbabilityToBeBestError("");
       } else {
-        setProbabilityToBeBestError("Probability must be between 50-100");
+        setProbabilityToBeBestError("Probability must be between 51-100");
       }
 
       if (!isInt) {
