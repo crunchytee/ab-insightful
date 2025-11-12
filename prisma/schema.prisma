@@ -44,6 +44,12 @@ model Project {
   @@map("Project")
 }
 
+enum TimeUnit {
+  days
+  weeks
+  months
+}
+
 model Experiment {
   id           Int       @id @default(autoincrement()) @map("experiment_id")
   name         String
@@ -55,6 +61,10 @@ model Experiment {
   endCondition String?
   sectionId    String
   createdAt    DateTime  @default(now())
+
+  probabilityToBeBest Int?    @map("probability_to_be_best")
+  duration            Int?
+  timeUnit            TimeUnit? @map("time_unit")
 
   projectId Int     @map("project_id") // Foreign key
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade) // connects to Project's PK
