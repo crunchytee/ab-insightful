@@ -17,6 +17,9 @@ export const action = async ({ request }) => {
   const endCondition = (formData.get("endCondition") || "").trim();
   const endDateStr = (formData.get("endDate") || "").trim();
   const trafficSplitStr = (formData.get("trafficSplit") || "50").trim(); // Default to "0"
+  const probabilityToBeBestStr = (formData.get("probabilityToBeBest") || "").trim();
+  const durationStr = (formData.get("duration") || "").trim();
+  const timeUnitValue = (formData.get("timeUnit") || "").trim();
 
   // Storage Validation Errors
   const errors = {}; // will be length 0 when there are no errors
@@ -27,6 +30,34 @@ export const action = async ({ request }) => {
   // Only validates endDate if endCondition is 'End date'
   if (endCondition == "End date" && !endDateStr) {
     errors.endDate = "End Date is required when 'End date' is selected";
+  }
+
+  // Only validates probability to be best if endCondition is set to Stable Success Probability
+  const isStableSuccessProbability = endCondition === "stableSuccessProbability";
+  if(isStableSuccessProbability) {
+    if (probabilityToBeBestStr === "") {
+      errors.probabilityToBeBest = "Probability is required";
+    } else {
+      const num = Number(probabilityToBeBestStr);
+      if (!Number.isInteger(num)) {
+        errors.probabilityToBeBest = "Probability must be a whole numer";
+      } else if (num < 50 || num > 100) {
+        errors.probabilityToBeBest = "Probability must be between 50-100";
+      }
+    }
+    if (durationStr === "") {
+      errors.duration = "Duration is required";
+    } else {
+      const dur = Number(durationStr);
+      if (!Number.isInteger(dur)) {
+        errors.duration = "Duration must be a whole number";
+      } else if (dur < 1) {
+        errors.duration = "Duration must be at least 1";
+      }
+    }
+    if (!timeUnitValue) {
+      errors.timeUnit = "Time unit is required";
+    }
   }
 
   if (Object.keys(errors).length) return { errors };
@@ -65,6 +96,11 @@ export const action = async ({ request }) => {
   // If no date was provided, set to null
   const endDate = endDateStr ? new Date(endDateStr) : null;
 
+  //convert stable success probability variables to schema-ready types
+  const probabilityToBeBest = probabilityToBeBestStr ? Number(probabilityToBeBestStr) : null;
+  const duration = durationStr ? Number(durationStr) : null;
+  const timeUnit = timeUnitValue || null;
+
   // Assembles the final data object for Prisma
   const experimentData = {
     name: name,
@@ -90,6 +126,14 @@ export const action = async ({ request }) => {
       ],
     },
   };
+
+  if (isStableSuccessProbability) {
+    Object.assign(experimentData, {
+      probabilityToBeBest: probabilityToBeBest,
+      duration: duration,
+      timeUnit: timeUnit,
+    });
+  }
 
   const { createExperiment } = await import("../services/experiment.server");
   const experiment = await createExperiment(experimentData);
@@ -303,6 +347,24 @@ export default function CreateExperiment() {
   const [startDateError, setStartDateError] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [probabilityToBeBestError, setProbabilityToBeBestError] = useState("");
+  const [durationError, setDurationError] = useState("");
+  const [probabilityToBeBest, setProbabilityToBeBest] = useState("");
+  const [duration, setDuration] = useState("");
+  const [timeUnit, setTimeUnit] = useState("days");
+  const [timeUnitError, setTimeUnitError] = useState("");
+
+  //Check if there were any errors on the form
+  const hasClientErrors =
+    !!nameError ||
+    !!emptyDescriptionError ||
+    !!emptySectionIdError ||
+    !!probabilityToBeBestError ||
+    !!durationError ||
+    !!timeUnitError;
+
+  //check for fetcher state, want to block save draft button if in the middle of sumbitting
+  const isSubmitting = fetcher.state === "submitting";
 
   const handleExperimentCreate = async () => {
     // creates data object for all current state variables
@@ -314,6 +376,9 @@ export default function CreateExperiment() {
       endCondition: endSelected, // holds "Manual", "End Data"
       endDate: endDate, // The date string from s-date-field
       trafficSplit: experimentChance, // 0-100 value
+      probabilityToBeBest: probabilityToBeBest, //holds validated value 50-100
+      duration: duration, //length of time for experiment run
+      timeUnit: timeUnit,
     };
 
     try {
@@ -345,6 +410,38 @@ export default function CreateExperiment() {
       setSectionIdError("Section ID is a required field");
     } else {
       setSectionIdError(null); //clears error once user fixes
+    }
+  };
+
+  //Validates user input for probability of best and throws error based off of input
+  const handleProbabilityOfBestChange = (field, e) => {
+    const num = Number(e);
+    const isInt = Number.isInteger(num); 
+
+    if (field === "probabilityToBeBest") {
+      const inRange = num >= 50 && num <= 100;
+      if (isInt && inRange) {
+        setProbabilityToBeBest(num);
+        setProbabilityToBeBestError("");
+      } else {
+        setProbabilityToBeBestError("Probability must be between 50-100");
+      }
+
+      if (!isInt) {
+        setProbabilityToBeBestError("Probability must be a whole number");
+      }
+    } else if (field === "duration") {
+      if (num >= 1 && isInt) {
+        setDurationError("");
+        setDuration(num);
+      }
+      
+      if (num < 1) {
+        setDurationError("Duration must be greater than 1");
+      }
+      if (!isInt) {
+        setDurationError("Duration must be a whole number");
+      }
     }
   };
 
@@ -431,6 +528,7 @@ export default function CreateExperiment() {
       <s-button
         slot="primary-action"
         variant="primary"
+        disabled={hasClientErrors || isSubmitting}
         onClick={handleExperimentCreate}
       >
         Save Draft
@@ -700,7 +798,7 @@ export default function CreateExperiment() {
               label="End condition"
               name="endCondition"
               value={endSelected}
-              onChange={(e) => setEndSelected(e.target.value)}
+              onChange={(e) => setEndSelected(e.detail.value)}
             >
               <s-choice value="manual" defaultSelected>
                 Manual
@@ -737,13 +835,53 @@ export default function CreateExperiment() {
                 />
               </s-box>
             </s-stack>
+
+            <s-stack direction="inline" gap="base">
+              <s-stack flex="1" direction="inline" gap="base" alignItems="start">
+                <s-stack inlineSize="250px">
+                  <s-number-field 
+                    label="Probability to be the best greater than" 
+                    suffix="%" 
+                    inputMode="numeric"
+                    min="50"
+                    max="100"
+                    step="1"
+                    error={probabilityToBeBestError}
+                    onChange={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
+                    onInput={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
+                    onFocus={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}/>
+                </s-stack>
+                <s-stack inlineSize="80px">
+                  <s-number-field 
+                    label="For at least"
+                    inputMode="numeric"
+                    min="1"
+                    error={durationError}
+                    onChange={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
+                    onInput={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
+                    onFocus={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}/>
+                </s-stack>
+                <s-stack inlineSize="90px" paddingBlockStart="base">
+                  <s-select
+                    error={timeUnitError}>
+                    <s-option value="days">Days</s-option>
+                    <s-option value="weeks">Weeks</s-option>
+                    <s-option value="months">Months</s-option>
+                  </s-select>
+                </s-stack>
+              </s-stack>
+            </s-stack>
+
           </s-stack>
         </s-form>
       </s-section>
       <div style={{ marginBottom: "250px" }}>
         <s-stack direction="inline" gap="small" justifyContent="end">
           <s-button href="/app/experiments">Discard</s-button>
-          <s-button variant="primary" onClick={handleExperimentCreate}>
+          <s-button 
+            variant="primary" 
+            disabled={hasClientErrors || isSubmitting} 
+            onClick={handleExperimentCreate}>
             Save Draft
           </s-button>
         </s-stack>
