@@ -15,21 +15,69 @@ export const action = async ({ request }) => {
   const sectionId = (formData.get("sectionId") || "").trim();
   const goalValue = (formData.get("goal") || "").trim();
   const endCondition = (formData.get("endCondition") || "").trim();
+  const trafficSplitStr = (formData.get("trafficSplit") || "50").trim(); // Default to "0"
+
+  // Date/Time Fields (accepts both client-side UTC strings or separate date/time fields)
   const startDateUTC = (formData.get("startDateUTC") || "").trim();
   const endDateUTC = (formData.get("endDateUTC") || "").trim();
-  const trafficSplitStr = (formData.get("trafficSplit") || "50").trim(); // Default to "0"
+  const startDateStr = (formData.get("startDate") || "").trim();
+  const startTimeStr = (formData.get("startTime") || "").trim();
+  const endDateStr = (formData.get("endDate") || "").trim();
+  const endTimeStr = (formData.get("endTime") || "").trim();
 
   // Storage Validation Errors
   const errors = {}; // will be length 0 when there are no errors
+  
   if (!name) errors.name = "Name is required";
   if (!description) errors.description = "Description is required";
   if (!sectionId) errors.sectionId = "Section Id is required"; //Todo: Is sectionId still required?
 
-  if (!startDateUTC) {
-    errors.startDate = "Start date is required";
+  // helper to build a Date from local date + time components
+  const combineLocalToDate = (dateStr, timeStr = "00:00") => {
+    if (!dateStr) return null;
+    const parts = dateStr.split("-").map(Number);
+    if (parts.length !==3 || parts.some((p) => Number.isNaN(p))) return null;
+    const [y,m,d] = parts;
+    const [hh = 0, mm = 0] = (timeStr || "00:00").split(":").map(Number);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    const dt = new Date(y,m-1,d,hh || 0, mm || 0,0,0);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  };
+
+  //build startDateTime
+  let startDateTime = null;
+  if (startDateUTC) {
+    startDateTime = new Date(startDateUTC);
+    if (Number.isNaN(startDateTime.getTime())) startDateTime = null;
+  } else {
+    startDateTime = combineLocalToDate(startDateStr, startTimeStr);
   }
-  if (endCondition === "endDate" && !endDateUTC) {
-    errors.endDate = "End date is required when 'End date' is selected";
+
+  // validate startDateTime is present and in the future
+  const now = new Date();
+  if (!startDateTime){
+    errors.startDate = "Start date/time is required";
+  } else if (startDateTime <= now) {
+    errors.startDate = "Start date/time must be in the future";
+  }
+
+  // If endCondition is "endDate", build and validate endDateTime
+  let endDateTime = null;
+  if (endCondition === "endDate") {
+    if (endDateUTC) {
+      endDateTime = new Date(endDateUTC);
+      if (Number.isNaN(endDateTime.getTime())) endDateTime = null;
+    } else {  
+      endDateTime = combineLocalToDate(endDateStr, endTimeStr);
+    }
+    if (!endDateTime) {
+      errors.endDate = "End date/time is required when end condition is set to End Date";
+    } else if (!startDateTime) {
+      // skip further validation if startDateTime is invalid/missing
+    }
+    else if (endDateTime <= startDateTime) {
+      errors.endDate = "End must be after start date/time";
+    }
   }
 
   if (Object.keys(errors).length) return { errors };
@@ -67,8 +115,8 @@ export const action = async ({ request }) => {
 
   // Converts the date string to a Date object for Prisma
   // If no date was provided, set to null
-  const startDate = new Date(startDateUTC);
-  const endDate = endDateUTC ? new Date(endDateUTC) : null;
+  const startDate = startDateTime;
+  const endDate = endDateTime || null;
 
   // Assembles the final data object for Prisma
   const experimentData = {
@@ -271,7 +319,7 @@ function parseUserTime(input) {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
-function validateStartIsInFuture(startDateStr, startTimeStr) {
+function validateStartIsInFuture(startDateStr, startTimeStr = "00:00") {
   let dateError = "";
   let timeError = "";
 
@@ -290,8 +338,8 @@ function validateStartIsInFuture(startDateStr, startTimeStr) {
 
   const isToday = selectedDate.getTime() === today.getTime();
 
-  if (isToday && startTimeStr) {
-    const startDateTime = new Date(`${startDateStr}T${startTimeStr}`);
+  if (isToday) {
+    const startDateTime = new Date(`${startDateStr}T${startTimeStr || "00:00"}`);
     const now = new Date(); // The *actual* current time
 
     if (startDateTime <= now) {
@@ -303,20 +351,20 @@ function validateStartIsInFuture(startDateStr, startTimeStr) {
 
 function validateEndIsAfterStart(
   startDateStr,
-  startTimeStr,
+  startTimeStr = "00:00",
   endDateStr,
-  endTimeStr
+  endTimeStr = "00:00"
 ) {
   // return both a date-level error and a time-level error so UI can show the right one
   let dateError = "";
   let timeError = "";
 
-  if (!startDateStr || !startTimeStr || !endDateStr || !endTimeStr) {
+  if (!startDateStr || !endDateStr) {
     return { dateError, timeError };
   }
 
-  const startDateTime = new Date(`${startDateStr}T${startTimeStr}`);
-  const endDateTime = new Date(`${endDateStr}T${endTimeStr}`);
+  const startDateTime = new Date(`${startDateStr}T${startTimeStr || "00:00"}`);
+  const endDateTime = new Date(`${endDateStr}T${endTimeStr || "00:00"}`);
 
   if (endDateTime <= startDateTime) {
     const startDateOnly = new Date(`${startDateStr}T00:00:00`);
@@ -391,11 +439,6 @@ export default function CreateExperiment() {
 
   const handleExperimentCreate = async () => {
     // creates data object for all current state variables
-
-    // Before submitting, we must convert local time to UTC time for DB storage
-    const localStartDateTime = `${startDate}T${startTime || "00:00"}`; // Default to midnight if no time
-    const localEndDateTime = `${endDate}T${endTime || "00:00"}`; // This is in ISO-8061 format https://en.wikipedia.org/wiki/ISO_8601
-
     const startDateUTC = startDate ? localDateTimeToISOString(startDate, startTime) : "";
     const endDateUTC = endDate ? localDateTimeToISOString(endDate, endTime) : ""; // endDate is optional  
     
@@ -469,7 +512,7 @@ export default function CreateExperiment() {
     newStartTimeError = startTErr;
 
     // Validate end is after start (only if both are provided)
-    if (startDateVal && startTimeVal && endDateVal && endTimeVal) {
+    if (startDateVal && endDateVal) {
       const { dateError: endDErr, timeError: endTErr } = validateEndIsAfterStart(
         startDateVal,
         startTimeVal,
@@ -487,8 +530,7 @@ export default function CreateExperiment() {
       endTimeError: newEndTimeError,
     };
   };
-
-  // Updated handlers using the centralized validation
+  // Handlers for date/time changes that also trigger validation
   const handleDateChange = (field, newDate) => {
     // Updates the state so the field reflects picked date
     if (field === "start") {
@@ -508,6 +550,7 @@ export default function CreateExperiment() {
     }
   };
 
+  // Handlers for time changes that also trigger validation
   const handleStartTimeChange = (newStartTime) => {
     setStartTime(newStartTime);
     const errors = validateAllDateTimes(startDate, newStartTime, endDate, endTime);
@@ -517,6 +560,7 @@ export default function CreateExperiment() {
     setEndTimeError(errors.endTimeError);
   };
 
+  // Handler for end time changes that also trigger validation
   const handleEndTimeChange = (newEndTime) => {
     setEndTime(newEndTime);
     const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime);
@@ -899,4 +943,4 @@ export default function CreateExperiment() {
       </div>
     </s-page>
   );
-};
+}
