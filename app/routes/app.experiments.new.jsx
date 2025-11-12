@@ -28,8 +28,11 @@ export const action = async ({ request }) => {
   if (!sectionId) errors.sectionId = "Section Id is required"; //Todo: Is sectionId still required?
 
   // Only validates endDate if endCondition is 'End date'
-  if (endCondition == "End date" && !endDateStr) {
-    errors.endDate = "End Date is required when 'End date' is selected";
+  const isEndDate = endCondition === "endDate";
+  if (isEndDate) {
+    if (!endDateStr) {
+      errors.endDate = "End Date is required when 'End date' is selected";
+    }
   }
 
   // Only validates probability to be best if endCondition is set to Stable Success Probability
@@ -129,9 +132,9 @@ export const action = async ({ request }) => {
 
   if (isStableSuccessProbability) {
     Object.assign(experimentData, {
-      probabilityToBeBest: probabilityToBeBest,
-      duration: duration,
-      timeUnit: timeUnit,
+      probabilityToBeBest,
+      duration,
+      timeUnit
     });
   }
 
@@ -336,7 +339,7 @@ export default function CreateExperiment() {
   const [endDate, setEndDate] = useState("");
   const [endDateError, setEndDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
-  const [endSelected, setEndSelected] = useState("manual");
+  const [endCondition, setEndCondition] = useState("manual");
   const [goalSelected, setGoalSelected] = useState("completedCheckout");
   const [customerSegment, setCustomerSegment] = useState("allSegments");
   const [variant, setVariant] = useState(false);
@@ -373,7 +376,7 @@ export default function CreateExperiment() {
       description: description,
       sectionId: sectionId,
       goal: goalSelected, // holds the "view-page" value
-      endCondition: endSelected, // holds "Manual", "End Data"
+      endCondition: endCondition, // holds "Manual", "End Data"
       endDate: endDate, // The date string from s-date-field
       trafficSplit: experimentChance, // 0-100 value
       probabilityToBeBest: probabilityToBeBest, //holds validated value 50-100
@@ -794,20 +797,20 @@ export default function CreateExperiment() {
               </s-box>
             </s-stack>
 
-            <s-choice-list
-              label="End condition"
-              name="endCondition"
-              value={endSelected}
-              onChange={(e) => setEndSelected(e.detail.value)}
-            >
-              <s-choice value="manual" defaultSelected>
-                Manual
-              </s-choice>
-              <s-choice value="endDate">End date</s-choice>
-              <s-choice value="stableSuccessProbability">
-                Stable success probability
-              </s-choice>
-            </s-choice-list>
+            <s-stack gap="small">
+              <s-paragraph>End condition</s-paragraph>
+              <s-stack direction="inline" gap="base">
+                <s-button 
+                  variant={endCondition === "manual" ? "primary" : "secondary"}
+                  onClick={() => setEndCondition("manual")}>Manual</s-button>
+                <s-button 
+                  variant={endCondition === "endDate" ? "primary" : "secondary"}
+                  onClick={() => setEndCondition("endDate")}>End date</s-button>
+                <s-button 
+                  variant={endCondition === "stableSuccessProbability" ? "primary" : "secondary"}
+                  onClick={() => setEndCondition("stableSuccessProbability")}>Stable success probability</s-button>
+              </s-stack>
+            </s-stack>
 
             <s-stack direction="inline" gap="base">
               <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
@@ -846,16 +849,18 @@ export default function CreateExperiment() {
                     min="50"
                     max="100"
                     step="1"
+                    value={probabilityToBeBest}
                     error={probabilityToBeBestError}
                     onChange={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
                     onInput={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
                     onFocus={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}/>
                 </s-stack>
-                <s-stack inlineSize="80px">
+                <s-stack inlineSize="100px">
                   <s-number-field 
                     label="For at least"
                     inputMode="numeric"
                     min="1"
+                    value={duration}
                     error={durationError}
                     onChange={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
                     onInput={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
@@ -863,7 +868,9 @@ export default function CreateExperiment() {
                 </s-stack>
                 <s-stack inlineSize="90px" paddingBlockStart="base">
                   <s-select
-                    error={timeUnitError}>
+                    error={timeUnitError}
+                    value={timeUnit}
+                    onChange={(e) => {setTimeUnit(e.target.value);}}>
                     <s-option value="days">Days</s-option>
                     <s-option value="weeks">Weeks</s-option>
                     <s-option value="months">Months</s-option>
