@@ -35,25 +35,20 @@ export async function createUser(userdata) {
   }
   return null;
 }
+
 export async function updateLatestSession(userdata) {
-  // should refactor to be a more generic "update user data" where this function is responsible for A) figuring out what has changed and B) sendign a PATCH to the database to update just those fields.
-  if (!userdata) {
-    console.log(
-      "[cookieStore.server.js] [ERROR] cookieStore,server::updateLatestSession: userdata is undefined.",
-    );
-    return null;
-  } else {
-    console.log(
-      `Updating User's latest session...\nUser ID: ${userdata.shopifyCustomerID}\n New Session Date: ${userdata.latestSession}`,
-    );
-    const result = await db.user.update({
-      where: {
-        shopifyCustomerID: userdata.shopifyCustomerID,
-      },
-      update: {
-        latestSession: userdata.latestSession,
-      },
-    });
-    return result;
-  }
+  // Update latest session or create the user record if it doesn't exist yet
+  const result = await db.user.upsert({
+    where: {
+      shopifyCustomerID: userdata.client_id,
+    },
+    update: {
+      latestSession: userdata.timestamp,
+    },
+    create: {
+      shopifyCustomerID: userdata.client_id,
+      deviceType: userdata.device_type,
+    },
+  });
+  return result;
 }
