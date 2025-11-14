@@ -682,11 +682,6 @@ export default function CreateExperiment() {
     newStartDateError = startDErr;
     newStartTimeError = startTErr;
 
-    // Check if endDate is required but missing
-    if (condition === "endDate" && !endDateVal){
-      newEndDateError = "End date is required when 'End date' is selected";
-    }
-
     // Validate end date is not in the past
     if (condition === "endDate" && endDateVal) {
       const today = new Date();
