@@ -682,7 +682,10 @@ export default function CreateExperiment() {
     newStartDateError = startDErr;
     newStartTimeError = startTErr;
 
-    
+    // Check if endDate is required but missing
+    if (condition === "endDate" && !endDateVal){
+      newEndDateError = "End date is required when 'End date' is selected";
+    }
 
     // Validate end date is not in the past
     if (condition === "endDate" && endDateVal) {
@@ -743,7 +746,7 @@ export default function CreateExperiment() {
     setEndTimeError(errors.endTimeError);
   };
 
-  // Handler for end time changes that also trigger validation
+  // Handler for git changes that also trigger validation
   const handleEndTimeChange = (newEndTime) => {
     setEndTime(newEndTime);
     const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime, endCondition);
@@ -951,15 +954,13 @@ export default function CreateExperiment() {
               <s-text-field
                 placeholder="shopify-section-sections--25210977943842__header"
                 value={sectionId}
-                onChange={(e) => {
+                onChange={(e) => { 
                   const v = e.target.value;
                   setSectionId(v);
-                  if (emptySectionIdError && v.trim())
-                    setSectionIdError(null);
+                  if (emptySectionIdError && v.trim()) setSectionIdError(null);
                 }}
                 onBlur={handleSectionIdBlur}
-                error={errors.sectionId || emptySectionIdError}  
-
+                error={errors.sectionId || emptySectionIdError}
                 details="The associated Shopify section ID to be tested. Must be visible on production site"
               />
             </s-stack>
