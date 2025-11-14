@@ -476,7 +476,7 @@ export default function CreateExperiment() {
   const [variantExperimentChance, setVariantExperimentChance] = useState(50);
   const [startDate, setStartDate] = useState("");
   const [startDateError, setStartDateError] = useState("");
-  const [startTime, setStartTime] = useState("8:00");
+  const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [startTimeError, setStartTimeError] = useState("");
   const [endTimeError, setEndTimeError] = useState("");
@@ -498,12 +498,6 @@ export default function CreateExperiment() {
     if (endTime !== "") setEndTime("");
     if (endDateError !== "") setEndDateError("");
     if (endTimeError !== "") setEndTimeError("");
-  } else {
-    // Condition IS 'endDate'.
-    // If endTime is currently empty, set it to your desired default.
-    if (endTime === "") {
-      setEndTime("8:00");
-    }
   }
 }, [endCondition]); // The dependency [endCondition] is correct
   const [probabilityToBeBestError, setProbabilityToBeBestError] = useState("");
@@ -513,20 +507,32 @@ export default function CreateExperiment() {
   const [timeUnit, setTimeUnit] = useState("days");
   const [timeUnitError, setTimeUnitError] = useState("");
 
+  const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
+
+  const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
+
   //Check if there were any errors on the form
   const hasClientErrors =
     !!nameError ||
+    !!errors.name ||
     !!emptyDescriptionError ||
+    !!errors.description ||
     !!emptySectionIdError ||
+    !!errors.sectionId ||
     (variant && !!emptySectionIdVariantError) ||
+    (variant && !!errors.variantSectionId) ||
     !!probabilityToBeBestError ||
+    !!errors.probabilityToBeBest ||
     !!durationError ||
+    !!errors.duration ||
     !!timeUnitError || 
+    !!errors.timeUnit ||
     !!startDateError || 
+    !!errors.startDate ||
     !!startTimeError || 
     !!endDateError || 
+    !!errors.endDate ||
     !!endTimeError ||
-    !!durationError ||
     !!emptyStartDateError ||
     !!emptyEndDateError;
     ;
@@ -773,9 +779,7 @@ export default function CreateExperiment() {
     setVariantExperimentChance();
   };
 
-  const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
-
-  const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
+  
   const descriptionError = errors.description;
 
   // map internal values to a label + icon
