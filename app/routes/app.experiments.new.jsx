@@ -71,7 +71,8 @@ export const action = async ({ request }) => {
       endDateTime = new Date(endDateUTC);
       if (Number.isNaN(endDateTime.getTime())) endDateTime = null;
     } else {  
-      endDateTime = combineLocalToDate(endDateStr, endTimeStr);
+      const effectiveEndTimeStr = endTimeStr || "23:59";
+      endDateTime = combineLocalToDate(endDateStr, effectiveEndTimeStr);
     }
     if (!endDateTime) {
       errors.endDate = "End date/time is required when end condition is set to End Date";
@@ -404,7 +405,7 @@ function validateEndIsAfterStart(
   startDateStr,
   startTimeStr = "00:00",
   endDateStr,
-  endTimeStr = "00:00"
+  endTimeStr
 ) {
   // return both a date-level error and a time-level error so UI can show the right one
   let dateError = "";
@@ -414,8 +415,10 @@ function validateEndIsAfterStart(
     return { dateError, timeError };
   }
 
+  const effectiveEndTime = endTimeStr || "23:59";
+
   const startDateTime = new Date(`${startDateStr}T${startTimeStr || "00:00"}`);
-  const endDateTime = new Date(`${endDateStr}T${endTimeStr || "00:00"}`);
+  const endDateTime = new Date(`${endDateStr}T${effectiveEndTime}`);
 
   if (endDateTime <= startDateTime) {
     const startDateOnly = new Date(`${startDateStr}T00:00:00`);
@@ -625,7 +628,7 @@ export default function CreateExperiment() {
 
     // Check if endDate is required but missing
     if (condition === "endDate" && !endDateVal){
-      newEndDateError = "End date is required when 'End date is selected";
+      newEndDateError = "End date is required when 'End date' is selected";
     }
 
     // Validate end is after start (only if both are provided)
@@ -677,7 +680,7 @@ export default function CreateExperiment() {
     setEndTimeError(errors.endTimeError);
   };
 
-  // Handler for end time changes that also trigger validation
+  // Handler for git changes that also trigger validation
   const handleEndTimeChange = (newEndTime) => {
     setEndTime(newEndTime);
     const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime, endCondition);
@@ -883,7 +886,13 @@ export default function CreateExperiment() {
               <s-text-field
                 placeholder="shopify-section-sections--25210977943842__header"
                 value={sectionId}
-                onChange={(e) => setSectionId(e.target.value)}
+                onChange={(e) => { 
+                  const v = e.target.value;
+                  setSectionId(v);
+                  if (emptySectionIdError && v.trim()) setSectionIdError(null);
+                }}
+                onBlur={handleSectionIdBlur}
+                error={errors.sectionid || emptySectionIdError}
                 details="The associated Shopify section ID to be tested. Must be visible on production site"
               />
             </s-stack>
