@@ -75,7 +75,8 @@ export const action = async ({ request }) => {
       endDateTime = new Date(endDateUTC);
       if (Number.isNaN(endDateTime.getTime())) endDateTime = null;
     } else {  
-      endDateTime = combineLocalToDate(endDateStr, endTimeStr);
+      const effectiveEndTimeStr = endTimeStr || "23:59";
+      endDateTime = combineLocalToDate(endDateStr, effectiveEndTimeStr);
     }
     if (!endDateTime) {
       errors.endDate = "End date/time is required when end condition is set to End Date";
@@ -408,7 +409,7 @@ function validateEndIsAfterStart(
   startDateStr,
   startTimeStr = "00:00",
   endDateStr,
-  endTimeStr = "00:00"
+  endTimeStr
 ) {
   // return both a date-level error and a time-level error so UI can show the right one
   let dateError = "";
@@ -418,8 +419,9 @@ function validateEndIsAfterStart(
     return { dateError, timeError };
   }
 
+  const effectiveEndTime = endTimeStr || "23:59";
   const startDateTime = new Date(`${startDateStr}T${startTimeStr || "00:00"}`);
-  const endDateTime = new Date(`${endDateStr}T${endTimeStr || "00:00"}`);
+  const endDateTime = new Date(`${endDateStr}T${effectiveEndTime}`);
 
   if (endDateTime <= startDateTime) {
     const startDateOnly = new Date(`${startDateStr}T00:00:00`);
@@ -521,8 +523,8 @@ export default function CreateExperiment() {
   const handleExperimentCreate = async () => {
     // creates data object for all current state variables
     const startDateUTC = startDate ? localDateTimeToISOString(startDate, startTime) : "";
-    const endDateUTC = (endCondition === "endDate" && endDate) ? localDateTimeToISOString(endDate, endTime) : ""; //only include if endCondition is "endDate"
-
+    const effectiveEndTime = (endDate && !endTime) ? "23:59" : endTime;
+    const endDateUTC = endDate ? localDateTimeToISOString(endDate, effectiveEndTime) : ""; 
     
     const experimentData = {
       name: name,
@@ -694,7 +696,7 @@ export default function CreateExperiment() {
       endTimeError: newEndTimeError,
     };
   };
-  // Handlers for date/time changes that also trigger validation
+  // Handlers for git changes that also trigger validation
   const handleDateChange = (field, newDate) => {
     // Updates the state so the field reflects picked date
     if (field === "start") {
