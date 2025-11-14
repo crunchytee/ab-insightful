@@ -63,7 +63,7 @@ export const action = async ({ request }) => {
   // validate startDateTime is present and in the future
   const now = new Date();
   if (!startDateTime){
-    errors.startDate = "Start date/time is required";
+    errors.startDate = "Start date is required";
   } else if (startDateTime <= now) {
     errors.startDate = "Start date/time must be in the future";
   }
@@ -79,7 +79,7 @@ export const action = async ({ request }) => {
       endDateTime = combineLocalToDate(endDateStr, effectiveEndTimeStr);
     }
     if (!endDateTime) {
-      errors.endDate = "End date/time is required when end condition is set to End Date";
+      errors.endDate = "End date is required";
     } else if (!startDateTime) {
       // skip further validation if startDateTime is invalid/missing
     }
@@ -91,7 +91,7 @@ export const action = async ({ request }) => {
   const isEndDate = endCondition === "endDate";
   if (isEndDate) {
     if (!endDateStr) {
-      errors.endDate = "End date/time is required";
+      errors.endDate = "End date is required";
     }
   }
 
@@ -458,6 +458,7 @@ export default function CreateExperiment() {
   const [emptyDescriptionError, setDescriptionError] = useState(null);
   const [sectionId, setSectionId] = useState("");
   const [emptySectionIdError, setSectionIdError] = useState(null);
+  const [emptySectionIdVariantError, setSectionIdVariantError] = useState(null);
   const [emptyStartDateError, setEmptyStartDateError] = useState(null);
   const [emptyEndDateError, setEmptyEndDateError] = useState(null);
   const [endDate, setEndDate] = useState("");
@@ -472,7 +473,7 @@ export default function CreateExperiment() {
   const [variantExperimentChance, setVariantExperimentChance] = useState(50);
   const [startDate, setStartDate] = useState("");
   const [startDateError, setStartDateError] = useState("");
-  const [startTime, setStartTime] = useState("");
+  const [startTime, setStartTime] = useState("8:00");
   const [endTime, setEndTime] = useState("");
   const [startTimeError, setStartTimeError] = useState("");
   const [endTimeError, setEndTimeError] = useState("");
@@ -488,13 +489,20 @@ export default function CreateExperiment() {
 
   // clear end fields / errors when user switches end condition away from "endDate"
   useEffect(() => {
-    if (endCondition !== "endDate") {
-      if (endDate !== "") setEndDate("");
-      if (endTime !== "") setEndTime("");
-      if (endDateError !== "") setEndDateError("");
-      if (endTimeError !== "") setEndTimeError("");
+  if (endCondition !== "endDate") {
+    // Condition is 'manual' or 'stableSuccessProbability', so clear fields
+    if (endDate !== "") setEndDate("");
+    if (endTime !== "") setEndTime("");
+    if (endDateError !== "") setEndDateError("");
+    if (endTimeError !== "") setEndTimeError("");
+  } else {
+    // Condition IS 'endDate'.
+    // If endTime is currently empty, set it to your desired default.
+    if (endTime === "") {
+      setEndTime("8:00");
     }
-  }, [endCondition]);
+  }
+}, [endCondition]); // The dependency [endCondition] is correct
   const [probabilityToBeBestError, setProbabilityToBeBestError] = useState("");
   const [durationError, setDurationError] = useState("");
   const [probabilityToBeBest, setProbabilityToBeBest] = useState("");
@@ -507,6 +515,7 @@ export default function CreateExperiment() {
     !!nameError ||
     !!emptyDescriptionError ||
     !!emptySectionIdError ||
+    !!emptySectionIdVariantError ||
     !!probabilityToBeBestError ||
     !!durationError ||
     !!timeUnitError || 
@@ -570,6 +579,14 @@ export default function CreateExperiment() {
       setSectionIdError("Section ID is a required field");
     } else {
       setSectionIdError(null); //clears error once user fixes
+    }
+  };
+  
+  const handleSectionIdVariantBlur = () => {
+    if (!variantSectionId.trim()) {
+      setSectionIdVariantError("Section ID is a required field");
+    } else {
+      setSectionIdVariantError(null); //clears error once user fixes
     }
   };
 
@@ -983,7 +1000,14 @@ export default function CreateExperiment() {
                 <s-text-field
                   placeholder="shopify-section-sections--25210977943842__header"
                   value={variantSectionId}
-                  onChange={(e) => setVariantSectionId(e.target.value)}
+                  onChange={(e) => {
+                  const v = e.target.value;
+                  setVariantSectionId(v);
+                  if (emptySectionIdVariantError && v.trim())
+                    setSectionIdVariantError(null);
+                  }}
+                  onBlur={handleSectionIdVariantBlur}
+                  error={errors.sectionId || emptySectionIdVariantError}  
                   details="The associated Shopify section ID to be tested. Must be visible on production site"
                 />
               </s-stack>
@@ -1136,7 +1160,9 @@ export default function CreateExperiment() {
                       onInput={(e) => {
                         const v = e.target.value;
                         handleProbabilityOfBestChange("probabilityToBeBest", v);
-                        handleProbabilityOfBestChange("duration", "")
+                        if (!duration) {
+                          handleProbabilityOfBestChange("duration", "")
+                        }
                         if (probabilityToBeBestError && v.trim() && !probabilityToBeBestError)
                           setProbabilityToBeBestError(null);
                         }}
