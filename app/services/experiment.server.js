@@ -49,17 +49,14 @@ export async function getExperimentsList() {
 //get the experiment list, additionally analyses for conversion rate
 export async function getExperimentsList1() {
   const experiments = await db.experiment.findMany({
-    select: {
-      id: true,
-      name: true,
-      status: true,
-      startDate: true,
-      endDate: true,
-    }, orderBy: {
-      createdAt: 'desc'
+    include: {
+      analyses: true
     }
   });
   
-  if (experiments) return experiments;
-  else return null;
+  if (experiments) {
+    return experiments;
+  }
+  
+  return null;
 }
