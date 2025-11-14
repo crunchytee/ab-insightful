@@ -428,7 +428,7 @@ function validateEndIsAfterStart(
       dateError = "End date must be after the start date";
     } else {
       // same day but time invalid -> show error on time
-      timeError = "End must be after the start time";
+      timeError = "End time must be after the start time";
     }
   }
   return { dateError, timeError };
