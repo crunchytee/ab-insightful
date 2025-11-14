@@ -476,7 +476,7 @@ export default function CreateExperiment() {
     if (errors.startTimeError !== startTimeError) setStartTimeError(errors.startTimeError);
     if (errors.endDateError !== endDateError) setEndDateError(errors.endDateError);
     if (errors.endTimeError !== endTimeError) setEndTimeError(errors.endTimeError);
-  }, [startDate, startTime, endDate, endTime]);
+  }, [startDate, startTime, endDate, endTime, endCondition]);
 
   // clear end fields / errors when user switches end condition away from "endDate"
   useEffect(() => {
@@ -501,7 +501,12 @@ export default function CreateExperiment() {
     !!emptySectionIdError ||
     !!probabilityToBeBestError ||
     !!durationError ||
-    !!timeUnitError;
+    !!timeUnitError || 
+    !!startDateError || 
+    !!startTimeError || 
+    !!endDateError || 
+    !!endTimeError
+    ;
 
   //check for fetcher state, want to block save draft button if in the middle of sumbitting
   const isSubmitting = fetcher.state === "submitting";
@@ -601,7 +606,8 @@ export default function CreateExperiment() {
     startDateVal = startDate,
     startTimeVal = startTime,
     endDateVal = endDate,
-    endTimeVal = endTime
+    endTimeVal = endTime,
+    condition = endCondition
   ) => {
     let newStartDateError = "";
     let newStartTimeError = "";
@@ -616,8 +622,13 @@ export default function CreateExperiment() {
     newStartDateError = startDErr;
     newStartTimeError = startTErr;
 
+    // Check if endDate is required but missing
+    if (condition === "endDate" && !endDateVal){
+      newEndDateError = "End date is required when 'End date is selected";
+    }
+
     // Validate end is after start (only if both are provided)
-    if (startDateVal && endDateVal) {
+    else if (startDateVal && endDateVal) {
       const { dateError: endDErr, timeError: endTErr } = validateEndIsAfterStart(
         startDateVal,
         startTimeVal,
@@ -640,14 +651,14 @@ export default function CreateExperiment() {
     // Updates the state so the field reflects picked date
     if (field === "start") {
       setStartDate(newDate);
-      const errors = validateAllDateTimes(newDate, startTime, endDate, endTime);
+      const errors = validateAllDateTimes(newDate, startTime, endDate, endTime, endCondition);
       setStartDateError(errors.startDateError);
       setStartTimeError(errors.startTimeError);
       setEndDateError(errors.endDateError);
       setEndTimeError(errors.endTimeError);
     } else if (field === "end") {
       setEndDate(newDate);
-      const errors = validateAllDateTimes(startDate, startTime, newDate, endTime);
+      const errors = validateAllDateTimes(startDate, startTime, newDate, endTime, endCondition);
       setStartDateError(errors.startDateError);
       setStartTimeError(errors.startTimeError);
       setEndDateError(errors.endDateError);
@@ -658,7 +669,7 @@ export default function CreateExperiment() {
   // Handlers for time changes that also trigger validation
   const handleStartTimeChange = (newStartTime) => {
     setStartTime(newStartTime);
-    const errors = validateAllDateTimes(startDate, newStartTime, endDate, endTime);
+    const errors = validateAllDateTimes(startDate, newStartTime, endDate, endTime, endCondition);
     setStartDateError(errors.startDateError);
     setStartTimeError(errors.startTimeError);
     setEndDateError(errors.endDateError);
@@ -668,7 +679,7 @@ export default function CreateExperiment() {
   // Handler for end time changes that also trigger validation
   const handleEndTimeChange = (newEndTime) => {
     setEndTime(newEndTime);
-    const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime);
+    const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime, endCondition);
     setStartDateError(errors.startDateError);
     setStartTimeError(errors.startTimeError);
     setEndDateError(errors.endDateError);
