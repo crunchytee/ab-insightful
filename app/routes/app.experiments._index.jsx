@@ -1,4 +1,5 @@
 import { useLoaderData } from "react-router";
+import { formatRuntime } from "../utils/formatRuntime.js";
 
 
 // Server side code
@@ -26,6 +27,13 @@ export default function Experimentsindex() {
     {
       //single tuple of the experiment data
       const curExp = experiments[i];
+
+      // call formatRuntime utility
+      const runtime = formatRuntime(
+        curExp.startDate,
+        curExp.endDate,
+        curExp.status
+      );
       
       //pushes javascripts elements into the array
       rows.push(
@@ -33,8 +41,8 @@ export default function Experimentsindex() {
           <s-table-cell>
             <s-link href={("./app/routes/reports/" + curExp.id)}>{curExp.name ?? "empty-name"}</s-link>
           </s-table-cell> {/* displays N/A when data is null */}
-          <s-table-cell>N/A</s-table-cell>
-          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell> {curExp.status ?? "N/A"} </s-table-cell>
+          <s-table-cell> {runtime} </s-table-cell> 
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
