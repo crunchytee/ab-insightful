@@ -1,3 +1,18 @@
+//suppress react hydration warnings
+//known issue between polaris web components and React hydration
+if (typeof window !== 'undefined') {
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' && 
+      args[0].includes('Extra attributes from the server')
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+}
+
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
 import { useState, useEffect } from "react";
@@ -294,6 +309,7 @@ function TimeSelect({
           disclosure="down"
           commandFor={popoverId}
           icon="chevron-down"
+          accessibilityLabel="Select time"
         />
       </s-text-field>
 
@@ -620,7 +636,8 @@ export default function CreateExperiment() {
   };
 
   const handleProbabilityToBeBestBlur = () => {
-    if (!probabilityToBeBest.trim()) {
+    const value = String(probabilityToBeBest || '').trim();
+    if (!value.trim()) {
       setProbabilityToBeBestError("Probability is a required field");
     } else {
       setProbabilityToBeBestError(null); //clears error once user fixes
@@ -629,7 +646,8 @@ export default function CreateExperiment() {
 
   
   const handleDurationBlur = () => {
-    if (!duration.trim()) {
+    const value = String(duration || '').trim();
+    if (!value.trim()) {
       setDurationError("Duration is required");
     } else {
       setDurationError(null); //clears error once user fixes
@@ -963,19 +981,14 @@ export default function CreateExperiment() {
                 <s-heading>Variant 1</s-heading>
               </s-stack>
               {/*Custom Label Row (SectionID + help link)*/}
-              <s-stack direction="inline" align="baseline" gap="large">
-                <s-box flex-grow="1">
-                  <s-text as="p" variant="bodyMd" font-weight="medium">
-                    Section ID to be tested
-                  </s-text>
-                </s-box>
-                <s-link href="#" target="_blank">
-                  How do I find my section?
-                </s-link>
-              </s-stack>
+              <s-link href="#" target="_blank">
+                How do I find my section?
+              </s-link>
               <s-text-field
                 placeholder="shopify-section-sections--25210977943842__header"
                 value={sectionId}
+                label="Section ID to be tested"
+                required
                 onFocus={() => {
                   setSectionIdError(null);
                   if (fetcher.data?.errors?.sectionId) {
@@ -1019,19 +1032,14 @@ export default function CreateExperiment() {
 
               <s-stack direction="block" gap="small" paddingBlock="base">
                 {/*Custom Label Row (SectionID + help link)*/}
-                <s-stack direction="inline" align="baseline" gap="large">
-                  <s-box flex-grow="1">
-                    <s-text as="p" variant="bodyMd" font-weight="medium">
-                      Section ID to be tested
-                    </s-text>
-                  </s-box>
-                  <s-link href="#" target="_blank">
-                    How do I find my section?
-                  </s-link>
-                </s-stack>
+                <s-link href="#" target="_blank">
+                  How do I find my section?
+                </s-link>
                 <s-text-field
                   placeholder="shopify-section-sections--25210977943842__header"
                   value={variantSectionId}
+                  label="Section ID to be tested"
+                  required
                   onFocus={() => {
                   setSectionIdVariantError(null);
                   if (fetcher.data?.errors?.variantSectionId) {
@@ -1091,10 +1099,20 @@ export default function CreateExperiment() {
         justifyContent="end"
         paddingBlockEnd="base"
       >
-        <s-button icon="minus" disabled={!variant} onClick={handleVariantUndo}>
+        <s-button 
+          icon="minus" 
+          accessibilityLabel="Remove item"
+          disabled={!variant} 
+          onClick={handleVariantUndo}
+        >
           Remove Another Variant
         </s-button>
-        <s-button icon="plus" disabled={variant} onClick={handleVariant}>
+        <s-button
+          icon="plus"
+          accessibilityLabel="Add item" 
+          disabled={variant} 
+          onClick={handleVariant}
+        >
           Add Another Variant
         </s-button>
       </s-stack>
@@ -1258,7 +1276,9 @@ export default function CreateExperiment() {
                     />
                   </s-stack>
                   <s-stack inlineSize="90px" paddingBlockStart="base">
+                    <div style={{ marginTop: "-16px" }}>
                     <s-select
+                      label="Time Unit"
                       error={timeUnitError}
                       value={timeUnit}
                       onChange={(e) => {setTimeUnit(e.target.value);}}>
@@ -1266,6 +1286,7 @@ export default function CreateExperiment() {
                       <s-option value="weeks">Weeks</s-option>
                       <s-option value="months">Months</s-option>
                     </s-select>
+                    </div>
                   </s-stack>
                 </s-stack>
               </s-stack>

@@ -37,7 +37,7 @@ export default function Experimentsindex() {
       
       //pushes javascripts elements into the array
       rows.push(
-        <s-table-row>
+        <s-table-row key={curExp.id}>
           <s-table-cell>
             <s-link href={("./app/routes/reports/" + curExp.id)}>{curExp.name ?? "empty-name"}</s-link>
           </s-table-cell> {/* displays N/A when data is null */}
@@ -65,7 +65,7 @@ export default function Experimentsindex() {
                   overflow="hidden"> {/*box used to provide a curved edge table */}
             <s-table>
               <s-table-header-row>
-                <s-table-header listSlot="primary">Name</s-table-header>
+                <s-table-header listslot='primary'>Name</s-table-header>
                 <s-table-header listSlot="secondary">Status</s-table-header>
                 <s-table-header listSlot="labeled">Runtime</s-table-header>
                 <s-table-header listSlot="labeled" format="numeric">Goal Completion Rate</s-table-header>
