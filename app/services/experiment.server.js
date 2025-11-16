@@ -70,7 +70,8 @@ export async function updateProbabilityOfBest(experiment) {
 
 
 //takes a singular experiment and adds an entry with all relevant statistics update (probabilityOfBeingBest, alpha, beta, )
-  //uses random-base-beta from the stdlib to perform statistical simulation.
+//uses random-base-beta from the stdlib to perform statistical simulation.
+//intended to be used in conjunction with other helper functions (e.g. getExperimentsWithAnalyses() and updateProbabilityOfBest) to perform batch calculation on multiple experiments
 export async function setProbabilityOfBest({
   experimentId, goalId,
   draws = 1000,
@@ -94,16 +95,23 @@ export async function setProbabilityOfBest({
   if (!allAnalysisRows.length) return { updated: 0, reason: "No Analysis rows found" };
 
 
-  //reduces variant entries down to latest version of that analysis (since there are multiple analysis per experiment & variant) 
-  const latestByVariant = new Map();
-  for (const r of allAnalysisRows) {
-    if (!latestByVariant.has(r.variantId)) latestByVariant.set(r.variantId, r);
+  //reduces variant entries down to ones that have not been calculated yet. 
+  const uncalculatedRows = await db.analysis.findMany({
+    where: {
+      experimentId,
+      goalId,
+      probabilityOfBeingBest: null,
+      expectedLoss: null,
+    },
+  });
+
+  if (uncalculatedRows.length < 2) {
+    return;
   }
-  const latest = Array.from(latestByVariant.values());
 
   //filters out unacceptable postBetas and postAlphas (ones that are 0) and then maps it into a new object called posteriors
-  //keep in mind during DB testing this means if postBeta and postAlpha are left blank, 
-  const posteriors = latest
+  //keep in mind during DB testing this mean if postBeta and postAlpha are left blank, 
+  const posteriors = uncalculatedRows
   .filter((r) => r.postAlpha > 0 && r.postBeta > 0) // filters entries with less than and greater than 0 
   .map((r) => ({
     variantId: r.variantId,
