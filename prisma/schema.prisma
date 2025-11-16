@@ -61,7 +61,7 @@ model Experiment {
   id           Int              @id @default(autoincrement()) @map("experiment_id")
   name         String
   description  String
-  status       ExperimentStatus @default("draft") // look for the enum datatype
+  status       ExperimentStatus @default(draft) // look for the enum datatype
   trafficSplit Decimal          @map("traffic_split")
   startDate    DateTime?        @map("start_date")
   endDate      DateTime?        @map("end_date")

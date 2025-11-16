@@ -4,7 +4,7 @@ import {
 } from "../services/experiment.server";
 
 export const loader = async () => {
-  const experimentId = 1; // Pick an experiment ID to alter
+  const experimentId = 2003; // Pick an experiment ID to alter
 
   const before = await handleCollectedEvent({
     timestamp: new Date().toISOString(),
