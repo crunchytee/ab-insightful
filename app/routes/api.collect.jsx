@@ -1,3 +1,5 @@
+import { handleCollectedEvent } from "../services/experiment.server";
+
 // Loader for handling OPTIONS requests
 export const loader = async ({ request }) => {
   if (request.method === "OPTIONS") {
@@ -29,10 +31,11 @@ export const action = async ({ request }) => {
 
   const data = await request.json();
   console.log("Event happened:", data);
-  // Handle the analytics data (SOON)
+  
+  const payload = await handleCollectedEvent(data);
 
   return Response.json(
-    { success: true },
+    { success: true, ...payload },
     {
       headers: {
         "Access-Control-Allow-Origin": "*",
