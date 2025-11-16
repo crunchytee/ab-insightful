@@ -50,17 +50,24 @@ enum TimeUnit {
   months
 }
 
+enum ExperimentStatus {
+  draft
+  running
+  paused
+  ended
+}
+
 model Experiment {
-  id           Int       @id @default(autoincrement()) @map("experiment_id")
+  id           Int              @id @default(autoincrement()) @map("experiment_id")
   name         String
   description  String
-  status       String    @default("draft") // look for the enum datatype
-  trafficSplit Decimal   @map("traffic_split")
-  startDate    DateTime? @map("start_date")
-  endDate      DateTime? @map("end_date")
+  status       ExperimentStatus @default("draft") // look for the enum datatype
+  trafficSplit Decimal          @map("traffic_split")
+  startDate    DateTime?        @map("start_date")
+  endDate      DateTime?        @map("end_date")
   endCondition String?
   sectionId    String
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime         @default(now())
 
   probabilityToBeBest Int?    @map("probability_to_be_best")
   duration            Int?
@@ -162,7 +169,6 @@ model Variant {
 
 model User {
   id            Int      @id @default(autoincrement()) @map("user_id")
-  shopifyCustomerID String @unique
   firstSeen     DateTime @default(now()) @map("first_seen")
   latestSession DateTime @updatedAt @map("latest_session") // Prisma's @updatedAt automatically handles this
   deviceType    String?  @map("device_type")
