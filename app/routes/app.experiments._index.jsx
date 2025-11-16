@@ -3,7 +3,8 @@ import {useEffect, useRef} from "react";
 import { json } from "@remix-run/node";
 //import Decimal from 'decimal.js';
 import { formatRuntime } from "../utils/formatRuntime.js";
-
+import { getImprovement } from "../services/experiment.server";
+import { formatImprovement } from "../utils/formatImprovement.js";
 
 // Server side code
 
@@ -13,28 +14,17 @@ export async function loader() {
   /**const { getExperimentsWithAnalyses } = await import("../services/experiment.server");
   const { updateProbabilityOfBest } = await import("../services/experiment.server");  */
   const { getExperimentsList } = await import("../services/experiment.server");
-  //const {getProbabilityOfBest } = await import("../services/experiment.server");
-  //run probability of best calculation
-  let experiments = [];
+  const experiments = await getExperimentsList();
 
-  try {
+ // compute improvements on the server
+  const enriched = await Promise.all(
+    experiments.map(async (e) => ({
+      ...e,
+      improvement: await getImprovement(e.id),
+    }))
+  );
 
-    /*
-    const analysisList = await getExperimentsWithAnalyses();
-    await updateProbabilityOfBest(analysisList); */
-    experiments = await getExperimentsList();
-
-  } catch (err) {
-    console.error("Loader error:", err);
-    // Fall back to empty array so the client stilql renders
-    experiments = [];
-  }
-  
- // const expProbOfBest = await getProbabilityOfBest(experiments);
-  if (experiments) {
-    return experiments
-  }
-  return null;
+  return enriched; // resolved data only
 } //end loader
 
 
@@ -125,6 +115,8 @@ export default function Experimentsindex() {
         curExp.endDate,
         curExp.status
       );
+
+      const improvement = curExp.improvement; // placeholder for improvement calculation
       
       //pushes javascripts elements into the array
       rows.push(
@@ -135,7 +127,7 @@ export default function Experimentsindex() {
           <s-table-cell> {curExp.status ?? "N/A"} </s-table-cell>
           <s-table-cell> {runtime} </s-table-cell> 
           <s-table-cell>N/A</s-table-cell>
-          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>{formatImprovement(improvement)}</s-table-cell>
           <s-table-cell>{getProbabilityOfBest(curExp)}</s-table-cell>
         </s-table-row>
       )
@@ -160,7 +152,7 @@ export default function Experimentsindex() {
                 <s-table-header listSlot="secondary">Status</s-table-header>
                 <s-table-header listSlot="labeled">Runtime</s-table-header>
                 <s-table-header listSlot="labeled" format="numeric">Goal Completion Rate</s-table-header>
-                <s-table-header listSlot="labeled" format="numeric">Improvement</s-table-header>
+                <s-table-header listSlot="labeled" format="numeric">Improvement (%)</s-table-header>
                 <s-table-header listSlot="labeled" format="numeric">Probability to be the best</s-table-header>
                 {/*Place Quick Access Button here */}
               </s-table-header-row>
