@@ -52,9 +52,10 @@ enum TimeUnit {
 
 enum ExperimentStatus {
   draft
-  running
+  active
   paused
-  ended
+  completed
+  archived
 }
 
 model Experiment {
@@ -144,7 +145,7 @@ model ExperimentAudience {
 model ExperimentHistory {
   id         Int      @id @default(autoincrement()) @map("histroy_id")
   prevStatus String   @map("prev_status") // draft
-  newStatus  String   @map("new_status") // running
+  newStatus  String   @map("new_status") // active
   changedAt  DateTime @default(now()) @map("changed_at")
 
   experimentId Int        @map("experiment_id") // Foreign key

@@ -107,7 +107,7 @@ async function seed(prisma) {
     update: {
       name: 'Add-to-Cart Button Color Test',
       description: 'Measure conversion rate impact of different button colors.',
-      status: 'running',
+      status: 'active',
       trafficSplit: '1.0',
       sectionId: 'add-to-cart',
       projectId: project.id,
@@ -116,7 +116,7 @@ async function seed(prisma) {
       id: 2003,
       name: 'Add-to-Cart Button Color Test',
       description: 'Measure conversion rate impact of different button colors.',
-      status: 'running',
+      status: 'active',
       trafficSplit: '1.0',
       sectionId: 'add-to-cart',
       projectId: project.id,
