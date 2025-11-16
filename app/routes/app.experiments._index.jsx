@@ -2,6 +2,9 @@ import { useLoaderData, useFetcher } from "react-router";
 import {useEffect, useRef} from "react";
 import { json } from "@remix-run/node";
 //import Decimal from 'decimal.js';
+import { formatRuntime } from "../utils/formatRuntime.js";
+
+
 // Server side code
 
 
@@ -115,15 +118,22 @@ export default function Experimentsindex() {
     {
       //single tuple of the experiment data
       const curExp = experiments[i];
+
+      // call formatRuntime utility
+      const runtime = formatRuntime(
+        curExp.startDate,
+        curExp.endDate,
+        curExp.status
+      );
       
       //pushes javascripts elements into the array
       rows.push(
-        <s-table-row>
+        <s-table-row key={curExp.id}>
           <s-table-cell>
             <s-link href={("./app/routes/reports/" + curExp.id)}>{curExp.name ?? "empty-name"}</s-link>
           </s-table-cell> {/* displays N/A when data is null */}
-          <s-table-cell>N/A</s-table-cell>
-          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell> {curExp.status ?? "N/A"} </s-table-cell>
+          <s-table-cell> {runtime} </s-table-cell> 
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>{getProbabilityOfBest(curExp)}</s-table-cell>
@@ -146,7 +156,7 @@ export default function Experimentsindex() {
                   overflow="hidden"> {/*box used to provide a curved edge table */}
             <s-table>
               <s-table-header-row>
-                <s-table-header listSlot="primary">Name</s-table-header>
+                <s-table-header listslot='primary'>Name</s-table-header>
                 <s-table-header listSlot="secondary">Status</s-table-header>
                 <s-table-header listSlot="labeled">Runtime</s-table-header>
                 <s-table-header listSlot="labeled" format="numeric">Goal Completion Rate</s-table-header>

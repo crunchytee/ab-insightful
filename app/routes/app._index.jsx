@@ -1,3 +1,18 @@
+//suppress react hydration warnings
+//known issue between polaris web components and React hydration
+if (typeof window !== 'undefined') {
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' && 
+      args[0].includes('Extra attributes from the server')
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+}
+
 import { useState, useEffect } from "react";
 import { useFetcher } from "react-router";
 import { useNavigate } from "react-router";
@@ -30,9 +45,6 @@ export const action = async ({ request }) => {
 export default function Index() {
   const fetcher = useFetcher();
   const shopify = useAppBridge();
-
-  // remove automatic top-level redirect (use buttons for navigation)
-  const navigate = useNavigate();
 
   // State for setup guide
   const [visible, setVisible] = useState({

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLoaderData } from "react-router";
+import { formatRuntime } from "../utils/formatRuntime.js";
+
 
 //server side code
 export async function loader() {
@@ -21,16 +23,13 @@ export default function Reports() {
     const [tempDateRange, setTempDateRange] = useState(null);
     const [filteredExperiments, setFilteredExperiments] = useState(experiments);
 
-    //calculate the days since start date
-    const getDaysSince = (startDate) => {
-        if (!startDate) return "Not started";
-        
-        const days = Math.floor((new Date() - new Date(startDate)) / (1000 * 60 * 60 * 24));
-        
-        if (days === 0) return "Less than a day";
-        if (days === 1) return "1 day";
-        if (days < 0) return "Not started";
-        return `${days} days`;
+    //calculate runtime using formatRuntime utility
+    const getRuntime = (experiment) => {
+        return formatRuntime(
+            experiment.startDate,
+            experiment.endDate,
+            experiment.status
+        );
     };
 
     //generate a badge for status if applicable
@@ -87,7 +86,7 @@ export default function Reports() {
                 <s-table-row key={i}>
                     <s-table-cell>{renderExperimentName(curExp)}</s-table-cell>
                     <s-table-cell>{renderStatus(curExp.status)}</s-table-cell>
-                    <s-table-cell>{getDaysSince(curExp.startDate)}</s-table-cell>
+                    <s-table-cell>{getRuntime(curExp)}</s-table-cell>
                     <s-table-cell>{curExp.endCondition ?? "N/A"}</s-table-cell>
                     <s-table-cell>{getConversionRate(curExp)}</s-table-cell>
                 </s-table-row>
@@ -169,7 +168,10 @@ export default function Reports() {
         <>
             {/* custom date range popover */}
             <div style={{ marginRight: '16px'}}>
-                <s-button commandFor="date-range-popover" icon="calendar">
+                <s-button 
+                commandFor="date-range-popover" 
+                icon="calendar"
+                accessibilityLabel="Select date range">
                     {dateRange 
                         ? `${new Date(dateRange.start).toLocaleDateString()} - ${new Date(dateRange.end).toLocaleDateString()}`
                         : 'Select date range'
