@@ -1,27 +1,118 @@
-import { useLoaderData } from "react-router";
+import { useLoaderData, useFetcher } from "react-router";
+import {useEffect, useRef} from "react";
+import { json } from "@remix-run/node";
+//import Decimal from 'decimal.js';
 import { formatRuntime } from "../utils/formatRuntime.js";
 
 
 // Server side code
+
+
 export async function loader() {
   // Get the list of experiments & return them if there are any
+  /**const { getExperimentsWithAnalyses } = await import("../services/experiment.server");
+  const { updateProbabilityOfBest } = await import("../services/experiment.server");  */
   const { getExperimentsList } = await import("../services/experiment.server");
-  const experiments = await getExperimentsList();
+  //const {getProbabilityOfBest } = await import("../services/experiment.server");
+  //run probability of best calculation
+  let experiments = [];
+
+  try {
+
+    /*
+    const analysisList = await getExperimentsWithAnalyses();
+    await updateProbabilityOfBest(analysisList); */
+    experiments = await getExperimentsList();
+
+  } catch (err) {
+    console.error("Loader error:", err);
+    // Fall back to empty array so the client stilql renders
+    experiments = [];
+  }
+  
+ // const expProbOfBest = await getProbabilityOfBest(experiments);
   if (experiments) {
-    return experiments;
+    return experiments
   }
   return null;
+} //end loader
+
+
+export async function action() {
+  const { getExperimentsWithAnalyses, updateProbabilityOfBest } = await import(
+    "../services/experiment.server"
+  );
+  const list = await getExperimentsWithAnalyses();
+  await updateProbabilityOfBest(list);
+  return json({ ok: true });
 }
 
-  // Client side code
+  // ---------------------------------Client side code----------------------------------------------------
 export default function Experimentsindex() {
   // Get list of experiments
   const experiments = useLoaderData();
+  const fetcher = useFetcher();
+  const didStatsRun = useRef(false); //useRef is a modifier that ensure the didStatsRun value mutation is retained across re-renders of page
+
+  //applying calculations of stats here to retain read/write separation between action and loader. 
+  useEffect(() => {
+    if (didStatsRun.current == true) return;
+    if (fetcher.state === "idle") {
+      didStatsRun.current = true;
+      fetcher.submit(null, {method: "post"});
+    }
+  }, [fetcher]);
 
   //function responsible for render of table rows based off db
+
+  //TODO: restrict based on experiment goal
+    //- re
   function renderTableData(experiments)
   {
     const rows = [];
+
+    //retrieves the highest probability of best from the experiment and the winning variant's name
+    //PLEASE NOTE: This function does not account for an experiment having multiple entries with different goals. It will simply pick the highest probability (apples to oranges comparison). 
+    const getProbabilityOfBest = (experiment) => {
+    //check for analysis data
+      if (experiment.analyses && experiment.analyses.length > 0) {
+        let probabilityOfBestArr = [];
+        let probabilityOfBestName = [];
+        let i = 0
+        for ( i in experiment.analyses)
+        {
+
+          const analysisInstance = experiment.analyses[i];
+          const nameInstance = experiment.analyses[i].variant;
+          probabilityOfBestArr.push(analysisInstance.probabilityOfBeingBest);
+          probabilityOfBestName.push(nameInstance.name)
+        }
+
+        let maxValue = Math.max(...probabilityOfBestArr);
+        const maxIndex = probabilityOfBestArr.indexOf(maxValue)
+        const maxTrunc = Math.trunc(maxValue * 10000) / 10000; //manual truncation to avoid judicious rounding
+        const bestName = probabilityOfBestName[maxIndex];
+        const maxValueFormatted = (100 * maxTrunc).toFixed(2); //shifts decimals over to string version (e.g. .6789 to 67.89)
+
+        
+        //get the most recent analysis
+        const latestAnalysis = experiment.analyses[experiment.analyses.length - 1]; //assumes there are not multiple analyses
+        //get the conversions and users from analysis
+        const { otherThing, probabilityOfBeingBest } = latestAnalysis;
+        
+        //(parseFloat(probabilityOfBeingBest) * 100).toFixed(2)
+        //check for valid data
+        //checks for negative or illogical values (should be between 1 and 0)
+        if(maxValue < 0 || maxValue > 1)
+        {
+          return "N/A";
+        }
+        if (probabilityOfBeingBest !== null && probabilityOfBeingBest !== undefined) {
+          return `${bestName} (${maxValueFormatted}%)`;
+        }
+      }
+      return "inconclusive";
+    };
 
     for(let i = 0; i < experiments.length; i++)
     {
@@ -45,7 +136,7 @@ export default function Experimentsindex() {
           <s-table-cell> {runtime} </s-table-cell> 
           <s-table-cell>N/A</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
-          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>{getProbabilityOfBest(curExp)}</s-table-cell>
         </s-table-row>
       )
     }
@@ -110,4 +201,4 @@ export default function Experimentsindex() {
       );
   }
 
-}
+} //end of Experimentsindex
