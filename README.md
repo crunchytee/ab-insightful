@@ -1,10 +1,130 @@
 # AB Insightful
 
+
 ## Quick start
 
 First, remove all records from your database. You can do this by running `prisma migrate reset`. This will drop all data within all tables as well as drop the schema. This is safe for a development environment, and not safe for a production environment.
 
 While the output of `prisma migrate reset` will say it ran a seeding script, it is currently bugged. Run `npx prisma db seed -- --environment development`. You can confirm seeding worked by opening prisma studio.
+
+### Additional libraries for statistical calculation and remix actions
+
+run `npm install @stdlib/random-base-beta` (for calculating probability of best)
+run `npm install @remix-run/node` (for activating actions in jsx)
+
+Also, be sure to to migrate the schema changes to the database as stated above
+
+### Additional libraries for statistical calculation and remix actions
+
+run `npm install @stdlib/random-base-beta` (for calculating probability of best)
+run `npm install @remix-run/node` (for activating actions in jsx)
+Goal of probability of Best Calculation
+
+We are creating an A/B test experiment which has the possibility of extending to multiple variants (say A, B, C) with different observed conversions rates. The question we are wanting t o answer is that "Given the data I've seen, what is the probability that each variant is truly the best?"
+
+Approach
+
+We are applying a Bayesian approach due to (https://jakevdp.github.io/blog/2014/06/12/frequentism-and-bayesianism-3-confidence-credibility/) reasons stated here. To summarize, it is simply a better approach due to not requiring the user to input tertiary information that they are uncertain about. The specific approach that we apply is a Bayesian posterior approach with a Monte Carlo simulation. 
+
+s = totalConversions (total successes of a variant) 
+
+f = totalUsers - totalConversions (total failures of a variant)
+
+alphaPrior = 1 (standard distribuition)
+
+betaPrior = 1 (standard distribution)
+
+prior(alphaPrior, betaPrior)
+
+data ~ Beta(alphaPrior + s, betaPrior + f)
+
+Defining probability of Best
+
+Definition: the probability that variant page i's true conversion rate is higher than all the others. A common misnomer is that it is saying "variant i has the highest observed mean", this is not correct. A variant might have a slightly lower observed performance but wider uncertainty and therefore still has a meaningful chance to be the best. 
+
+Probability of best ($P_i$) has no closed-form analytical solutions once you have more than two variants. 
+
+Even for two betas, the exact formula involves messy (and incomplete) beta integrals, which are rather inefficient. Rather than solving the integral, we perform a Monte Carlo simulation in order to determine the probability of best. 
+
+Monte Carlo approximation
+
+Draw one random sample from each variant's Beta posterior
+
+Record which variant had the highest sampled values. 
+
+repeat this many times (10k-50k draws) 
+
+count how often each variant "won". 
+
+Calculate probability of best for variant:
+ 
+
+Due to law of averages, the result converges on the true value as it approaches infinity, giving us a valuable estimation of probability of best. 
+
+Expected Loss
+
+Expected loss tells you "if I picked this variant and it's not actually the best, how much conversion rate on average do I expect to lose?"
+
+Goal of probability of Best Calculation
+
+We are creating an A/B test experiment which has the possibility of extending to multiple variants (say A, B, C) with different observed conversions rates. The question we are wanting t o answer is that "Given the data I've seen, what is the probability that each variant is truly the best?"
+
+Approach
+
+We are applying a Bayesian approach due to (https://jakevdp.github.io/blog/2014/06/12/frequentism-and-bayesianism-3-confidence-credibility/) reasons stated here. To summarize, it is simply a better approach due to not requiring the user to input tertiary information that they are uncertain about. The specific approach that we apply is a Bayesian posterior approach with a Monte Carlo simulation. 
+
+s = totalConversions (total successes of a variant) 
+
+f = totalUsers - totalConversions (total failures of a variant)
+
+alphaPrior = 1 (standard distribuition)
+
+betaPrior = 1 (standard distribution)
+
+prior(alphaPrior, betaPrior)
+
+data ~ Beta(alphaPrior + s, betaPrior + f)
+
+Defining probability of Best
+
+Definition: the probability that variant page i's true conversion rate is higher than all the others. A common misnomer is that it is saying "variant i has the highest observed mean", this is not correct. A variant might have a slightly lower observed performance but wider uncertainty and therefore still has a meaningful chance to be the best. 
+
+Probability of best ($P_i$) has no closed-form analytical solutions once you have more than two variants. 
+
+Even for two betas, the exact formula involves messy (and incomplete) beta integrals, which are rather inefficient. Rather than solving the integral, we perform a Monte Carlo simulation in order to determine the probability of best. 
+
+Monte Carlo approximation
+
+Draw one random sample from each variant's Beta posterior
+
+Record which variant had the highest sampled values. 
+
+repeat this many times (10k-50k draws) 
+
+count how often each variant "won". 
+
+Calculate probability of best for variant:
+ 
+
+Due to law of averages, the result converges on the true value as it approaches infinity, giving us a valuable estimation of probability of best. 
+
+Expected Loss
+
+Expected loss tells you "if I picked this variant and it's not actually the best, how much conversion rate on average do I expect to lose?"
+
+v
+Also, be sure to to migrate the schema changes to the database as stated above
+
+
+### Additional libraries for statistical calculation and remix actions
+
+run `npm install @stdlib/random-base-beta` (for calculating probability of best)
+run `npm install @remix-run/node` (for activating actions in jsx)
+
+Also, be sure to to migrate the schema changes to the database as stated above
+
+
+
 
 ### Prerequisites
 

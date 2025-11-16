@@ -230,12 +230,12 @@ model Analysis {
   daysAnalyzed           Int      @map("days_analyzed")
   totalUsers             Int      @map("total_users")
   totalConversions       Int      @map("total_conversions")
-  conversionRate         Decimal  @map("conversion_rate")
-  probabilityOfBeingBest Decimal  @map("probability_of_being_best")
-  expectedLoss           Decimal  @map("expected_loss")
+  conversionRate         Float    @map("conversion_rate")
+  probabilityOfBeingBest Float?   @map("probability_of_being_best")
+  expectedLoss           Float?   @map("expected_loss")
   credIntervalLift       Json     @map("cred_interval_lift")
-  postAlpha              Int      @map("post_alpha")
-  postBeta               Int      @map("post_beta")
+  postAlpha              Float    @map("post_alpha")
+  postBeta               Float    @map("post_beta")
 
   experimentId Int        @map("experiment_id") // Foreign Key
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade) // Connects to the Experiment's PK
