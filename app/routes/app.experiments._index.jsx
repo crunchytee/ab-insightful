@@ -1,16 +1,24 @@
 import { useLoaderData } from "react-router";
 import { formatRuntime } from "../utils/formatRuntime.js";
-
+import { getImprovement } from "../services/experiment.server";
+import { formatImprovement } from "../utils/formatImprovement.js";
 
 // Server side code
 export async function loader() {
   // Get the list of experiments & return them if there are any
   const { getExperimentsList } = await import("../services/experiment.server");
   const experiments = await getExperimentsList();
-  if (experiments) {
-    return experiments;
-  }
-  return null;
+  if (!experiments) return null;
+
+  // compute improvements on the server
+  const enriched = await Promise.all(
+    experiments.map(async (e) => ({
+      ...e,
+      improvement: await getImprovement(e.id),
+    }))
+  );
+
+  return enriched; // resolved data only
 }
 
   // Client side code
@@ -34,6 +42,8 @@ export default function Experimentsindex() {
         curExp.endDate,
         curExp.status
       );
+
+      const improvement = curExp.improvement; // placeholder for improvement calculation
       
       //pushes javascripts elements into the array
       rows.push(
@@ -44,7 +54,7 @@ export default function Experimentsindex() {
           <s-table-cell> {curExp.status ?? "N/A"} </s-table-cell>
           <s-table-cell> {runtime} </s-table-cell> 
           <s-table-cell>N/A</s-table-cell>
-          <s-table-cell>N/A</s-table-cell>
+          <s-table-cell>{formatImprovement(improvement)}</s-table-cell>
           <s-table-cell>N/A</s-table-cell>
         </s-table-row>
       )
@@ -69,7 +79,7 @@ export default function Experimentsindex() {
                 <s-table-header listSlot="secondary">Status</s-table-header>
                 <s-table-header listSlot="labeled">Runtime</s-table-header>
                 <s-table-header listSlot="labeled" format="numeric">Goal Completion Rate</s-table-header>
-                <s-table-header listSlot="labeled" format="numeric">Improvement</s-table-header>
+                <s-table-header listSlot="labeled" format="numeric">Improvement (%)</s-table-header>
                 <s-table-header listSlot="labeled" format="numeric">Probability to be the best</s-table-header>
                 {/*Place Quick Access Button here */}
               </s-table-header-row>

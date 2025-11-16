@@ -224,7 +224,7 @@ model Analysis {
   daysAnalyzed           Int      @map("days_analyzed")
   totalUsers             Int      @map("total_users")
   totalConversions       Int      @map("total_conversions")
-  conversionRate         Decimal  @map("conversion_rate")
+  conversionRate         Float  @map("conversion_rate")
   probabilityOfBeingBest Decimal  @map("probability_of_being_best")
   expectedLoss           Decimal  @map("expected_loss")
   credIntervalLift       Json     @map("cred_interval_lift")
