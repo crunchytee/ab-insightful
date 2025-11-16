@@ -1,3 +1,18 @@
+//suppress react hydration warnings
+//known issue between polaris web components and React hydration
+if (typeof window !== 'undefined') {
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' && 
+      args[0].includes('Extra attributes from the server')
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+}
+
 import { authenticate } from "../shopify.server";
 import { useFetcher, redirect } from "react-router";
 import { useState, useEffect } from "react";
@@ -13,6 +28,8 @@ export const action = async ({ request }) => {
   const name = (formData.get("name") || "").trim();
   const description = (formData.get("description") || "").trim();
   const sectionId = (formData.get("sectionId") || "").trim();
+  const variantSectionId = (formData.get("variantSectionId") || "").trim();
+  const variantEnabled = formData.get("variant") === "true";
   const goalValue = (formData.get("goal") || "").trim();
   const endCondition = (formData.get("endCondition") || "").trim();
   const trafficSplitStr = (formData.get("trafficSplit") || "50").trim(); // Default to "0"
@@ -33,7 +50,12 @@ export const action = async ({ request }) => {
   
   if (!name) errors.name = "Name is required";
   if (!description) errors.description = "Description is required";
-  if (!sectionId) errors.sectionId = "Section Id is required"; //Todo: Is sectionId still required?
+  if (!sectionId) errors.sectionId = "Section Id is required"; 
+  if (variantEnabled && !variantSectionId) errors.variantSectionId = "Variant Section Id is required"; //only validate if variant is true
+  if (!startDateStr && !startDateUTC) errors.startDate = "Start Date is required";
+  if (endCondition === "stableSuccessProbability" && !probabilityToBeBestStr) errors.probabilityToBeBest = "Probability is required";
+  if (endCondition === "stableSuccessProbability" && !durationStr) errors.duration = "Duration is required";
+
 
   // helper to build a Date from local date + time components
   const combineLocalToDate = (dateStr, timeStr = "00:00") => {
@@ -59,7 +81,7 @@ export const action = async ({ request }) => {
   // validate startDateTime is present and in the future
   const now = new Date();
   if (!startDateTime){
-    errors.startDate = "Start date/time is required";
+    errors.startDate = "Start date is required";
   } else if (startDateTime <= now) {
     errors.startDate = "Start date/time must be in the future";
   }
@@ -75,7 +97,7 @@ export const action = async ({ request }) => {
       endDateTime = combineLocalToDate(endDateStr, effectiveEndTimeStr);
     }
     if (!endDateTime) {
-      errors.endDate = "End date/time is required when end condition is set to End Date";
+      errors.endDate = "End date is required";
     } else if (!startDateTime) {
       // skip further validation if startDateTime is invalid/missing
     }
@@ -87,7 +109,7 @@ export const action = async ({ request }) => {
   const isEndDate = endCondition === "endDate";
   if (isEndDate) {
     if (!endDateStr) {
-      errors.endDate = "End Date is required when 'End date' is selected";
+      errors.endDate = "End date is required";
     }
   }
 
@@ -287,6 +309,7 @@ function TimeSelect({
           disclosure="down"
           commandFor={popoverId}
           icon="chevron-down"
+          accessibilityLabel="Select time"
         />
       </s-text-field>
 
@@ -416,7 +439,6 @@ function validateEndIsAfterStart(
   }
 
   const effectiveEndTime = endTimeStr || "23:59";
-
   const startDateTime = new Date(`${startDateStr}T${startTimeStr || "00:00"}`);
   const endDateTime = new Date(`${endDateStr}T${effectiveEndTime}`);
 
@@ -455,6 +477,9 @@ export default function CreateExperiment() {
   const [emptyDescriptionError, setDescriptionError] = useState(null);
   const [sectionId, setSectionId] = useState("");
   const [emptySectionIdError, setSectionIdError] = useState(null);
+  const [emptySectionIdVariantError, setSectionIdVariantError] = useState(null);
+  const [emptyStartDateError, setEmptyStartDateError] = useState(null);
+  const [emptyEndDateError, setEmptyEndDateError] = useState(null);
   const [endDate, setEndDate] = useState("");
   const [endDateError, setEndDateError] = useState("");
   const [experimentChance, setExperimentChance] = useState(50);
@@ -483,13 +508,14 @@ export default function CreateExperiment() {
 
   // clear end fields / errors when user switches end condition away from "endDate"
   useEffect(() => {
-    if (endCondition !== "endDate") {
-      if (endDate !== "") setEndDate("");
-      if (endTime !== "") setEndTime("");
-      if (endDateError !== "") setEndDateError("");
-      if (endTimeError !== "") setEndTimeError("");
-    }
-  }, [endCondition]);
+  if (endCondition !== "endDate") {
+    // Condition is 'manual' or 'stableSuccessProbability', so clear fields
+    if (endDate !== "") setEndDate("");
+    if (endTime !== "") setEndTime("");
+    if (endDateError !== "") setEndDateError("");
+    if (endTimeError !== "") setEndTimeError("");
+  }
+}, [endCondition]); // The dependency [endCondition] is correct
   const [probabilityToBeBestError, setProbabilityToBeBestError] = useState("");
   const [durationError, setDurationError] = useState("");
   const [probabilityToBeBest, setProbabilityToBeBest] = useState("");
@@ -497,18 +523,34 @@ export default function CreateExperiment() {
   const [timeUnit, setTimeUnit] = useState("days");
   const [timeUnitError, setTimeUnitError] = useState("");
 
+  const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
+
+  const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
+
   //Check if there were any errors on the form
   const hasClientErrors =
     !!nameError ||
+    !!errors.name ||
     !!emptyDescriptionError ||
+    !!errors.description ||
     !!emptySectionIdError ||
+    !!errors.sectionId ||
+    (variant && !!emptySectionIdVariantError) ||
+    (variant && !!errors.variantSectionId) ||
     !!probabilityToBeBestError ||
+    !!errors.probabilityToBeBest ||
     !!durationError ||
+    !!errors.duration ||
     !!timeUnitError || 
+    !!errors.timeUnit ||
     !!startDateError || 
+    !!errors.startDate ||
     !!startTimeError || 
     !!endDateError || 
-    !!endTimeError
+    !!errors.endDate ||
+    !!endTimeError ||
+    !!emptyStartDateError ||
+    !!emptyEndDateError;
     ;
 
   //check for fetcher state, want to block save draft button if in the middle of sumbitting
@@ -524,6 +566,8 @@ export default function CreateExperiment() {
       name: name,
       description: description,
       sectionId: sectionId,
+      variantSectionId: variantSectionId,
+      variant: String(variant),
       goal: goalSelected,             // holds the "view-page" value
       endCondition: endCondition,      // holds "Manual", "End Data"
       startDateUTC: startDateUTC,     // The date string from s-date-field
@@ -564,6 +608,49 @@ export default function CreateExperiment() {
       setSectionIdError("Section ID is a required field");
     } else {
       setSectionIdError(null); //clears error once user fixes
+    }
+  };
+  
+  const handleSectionIdVariantBlur = () => {
+    if (variant && !variantSectionId.trim()) {
+      setSectionIdVariantError("Section ID is a required field");
+    } else {
+      setSectionIdVariantError(null); //clears error once user fixes
+    }
+  };
+
+  const handleStartDateBlur = () => {
+    if (!startDate.trim()) {
+      setEmptyStartDateError("Start Date is a required field");
+    } else {
+      setEmptyStartDateError(null); //clears error once user fixes
+    }
+  };
+
+  const handleEndDateBlur = () => {
+    if (endCondition === "endDate" && !endDate.trim()) {
+      setEmptyEndDateError("End Date is a required field");
+    } else {
+      setEmptyEndDateError(null); //clears error once user fixes
+    }
+  };
+
+  const handleProbabilityToBeBestBlur = () => {
+    const value = String(probabilityToBeBest || '').trim();
+    if (!value.trim()) {
+      setProbabilityToBeBestError("Probability is a required field");
+    } else {
+      setProbabilityToBeBestError(null); //clears error once user fixes
+    }
+  };
+
+  
+  const handleDurationBlur = () => {
+    const value = String(duration || '').trim();
+    if (!value.trim()) {
+      setDurationError("Duration is required");
+    } else {
+      setDurationError(null); //clears error once user fixes
     }
   };
 
@@ -626,13 +713,19 @@ export default function CreateExperiment() {
     newStartDateError = startDErr;
     newStartTimeError = startTErr;
 
-    // Check if endDate is required but missing
-    if (condition === "endDate" && !endDateVal){
-      newEndDateError = "End date is required when 'End date' is selected";
-    }
+    
 
-    // Validate end is after start (only if both are provided)
-    else if (startDateVal && endDateVal) {
+    // Validate end date is not in the past
+    if (condition === "endDate" && endDateVal) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedEndDate = new Date(`${endDateVal}T00:00:00`);
+    
+    if (selectedEndDate < today) {
+      newEndDateError = "End date cannot be in the past";
+    }
+    // Only validate end is after start if end date is valid (not in past)
+    else if (startDateVal) {
       const { dateError: endDErr, timeError: endTErr } = validateEndIsAfterStart(
         startDateVal,
         startTimeVal,
@@ -642,6 +735,7 @@ export default function CreateExperiment() {
       newEndDateError = endDErr;
       newEndTimeError = endTErr;
     }
+  }
 
     return {
       startDateError: newStartDateError,
@@ -650,7 +744,7 @@ export default function CreateExperiment() {
       endTimeError: newEndTimeError,
     };
   };
-  // Handlers for date/time changes that also trigger validation
+  // Handlers for git changes that also trigger validation
   const handleDateChange = (field, newDate) => {
     // Updates the state so the field reflects picked date
     if (field === "start") {
@@ -680,7 +774,7 @@ export default function CreateExperiment() {
     setEndTimeError(errors.endTimeError);
   };
 
-  // Handler for git changes that also trigger validation
+  // Handler for end time changes that also trigger validation
   const handleEndTimeChange = (newEndTime) => {
     setEndTime(newEndTime);
     const errors = validateAllDateTimes(startDate, startTime, endDate, newEndTime, endCondition);
@@ -703,9 +797,7 @@ export default function CreateExperiment() {
     setVariantExperimentChance();
   };
 
-  const error = fetcher.data?.error; // Fetches error from server side MIGHT CAUSE ERROR
-
-  const errors = fetcher.data?.errors || {}; // looks for error data, if empty instantiate errors as empty object
+  
   const descriptionError = errors.description;
 
   // map internal values to a label + icon
@@ -820,6 +912,14 @@ export default function CreateExperiment() {
                 label="Experiment Name"
                 placeholder="Unnamed Experiment"
                 value={name}
+                required
+                onFocus={() => {
+                  setNameError(null);
+                  if (fetcher.data?.errors?.name) {
+                      //clear server-side errors by resetting fetcher data
+                      fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, name: undefined } };
+                  }
+                }}
                 //Event handler callback to set value
                 onChange={(e) => {
                   handleName(e.target.value);
@@ -835,6 +935,14 @@ export default function CreateExperiment() {
                 label="Experiment Description"
                 placeholder="Add a detailed description of your experiment"
                 value={description}
+                required
+                onFocus={() => {
+                  setDescriptionError(null);
+                  if (fetcher.data?.errors?.description) {
+                      //clear server-side errors by resetting fetcher data
+                      fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, description: undefined } };
+                  }
+                }}
                 // Known as a controlled component, the value is tied to {description} state
                 onChange={(e) => {
                   const v = e.target.value;
@@ -873,20 +981,30 @@ export default function CreateExperiment() {
                 <s-heading>Variant 1</s-heading>
               </s-stack>
               {/*Custom Label Row (SectionID + help link)*/}
-              <s-stack direction="inline" align="baseline" gap="large">
-                <s-box flex-grow="1">
-                  <s-text as="p" variant="bodyMd" font-weight="medium">
-                    Section ID to be tested
-                  </s-text>
-                </s-box>
-                <s-link href="#" target="_blank">
-                  How do I find my section?
-                </s-link>
-              </s-stack>
+              <s-link href="#" target="_blank">
+                How do I find my section?
+              </s-link>
               <s-text-field
                 placeholder="shopify-section-sections--25210977943842__header"
                 value={sectionId}
-                onChange={(e) => setSectionId(e.target.value)}
+                label="Section ID to be tested"
+                required
+                onFocus={() => {
+                  setSectionIdError(null);
+                  if (fetcher.data?.errors?.sectionId) {
+                      //clear server-side errors by resetting fetcher data
+                      fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, sectionId: undefined } };
+                  }
+                }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSectionId(v);
+                  if (emptySectionIdError && v.trim())
+                    setSectionIdError(null);
+                }}
+                onBlur={handleSectionIdBlur}
+                error={errors.sectionId || emptySectionIdError}  
+
                 details="The associated Shopify section ID to be tested. Must be visible on production site"
               />
             </s-stack>
@@ -914,20 +1032,29 @@ export default function CreateExperiment() {
 
               <s-stack direction="block" gap="small" paddingBlock="base">
                 {/*Custom Label Row (SectionID + help link)*/}
-                <s-stack direction="inline" align="baseline" gap="large">
-                  <s-box flex-grow="1">
-                    <s-text as="p" variant="bodyMd" font-weight="medium">
-                      Section ID to be tested
-                    </s-text>
-                  </s-box>
-                  <s-link href="#" target="_blank">
-                    How do I find my section?
-                  </s-link>
-                </s-stack>
+                <s-link href="#" target="_blank">
+                  How do I find my section?
+                </s-link>
                 <s-text-field
                   placeholder="shopify-section-sections--25210977943842__header"
                   value={variantSectionId}
-                  onChange={(e) => setVariantSectionId(e.target.value)}
+                  label="Section ID to be tested"
+                  required
+                  onFocus={() => {
+                  setSectionIdVariantError(null);
+                  if (fetcher.data?.errors?.variantSectionId) {
+                      //clear server-side errors by resetting fetcher data
+                      fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, variantSectionId: undefined } };
+                  }
+                  }}
+                  onChange={(e) => {
+                  const v = e.target.value;
+                  setVariantSectionId(v);
+                  if (emptySectionIdVariantError && v.trim())
+                    setSectionIdVariantError(null);
+                  }}
+                  onBlur={handleSectionIdVariantBlur}
+                  error={errors.variantSectionId || emptySectionIdVariantError}  
                   details="The associated Shopify section ID to be tested. Must be visible on production site"
                 />
               </s-stack>
@@ -972,10 +1099,20 @@ export default function CreateExperiment() {
         justifyContent="end"
         paddingBlockEnd="base"
       >
-        <s-button icon="minus" disabled={!variant} onClick={handleVariantUndo}>
+        <s-button 
+          icon="minus" 
+          accessibilityLabel="Remove item"
+          disabled={!variant} 
+          onClick={handleVariantUndo}
+        >
           Remove Another Variant
         </s-button>
-        <s-button icon="plus" disabled={variant} onClick={handleVariant}>
+        <s-button
+          icon="plus"
+          accessibilityLabel="Add item" 
+          disabled={variant} 
+          onClick={handleVariant}
+        >
           Add Another Variant
         </s-button>
       </s-stack>
@@ -991,11 +1128,22 @@ export default function CreateExperiment() {
                   label="Start Date"
                   placeholder="Select start date"
                   value={startDate}
-                  error={startDateError}
+                  error={emptyStartDateError || startDateError || errors.startDate}
                   required
-                  onChange={(e) => {
-                    handleDateChange("start", e.target.value);
+                  onFocus={() => {
+                  setEmptyStartDateError(null);
+                  if (fetcher.data?.errors?.startDate) {
+                      //clear server-side errors by resetting fetcher data
+                      fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, startDate: undefined } };
+                  }
                   }}
+                  onChange={(e) => {
+                  const v = e.target.value;
+                  handleDateChange("start", v);
+                  if (emptyStartDateError && v.trim())
+                    setEmptyStartDateError(null);
+                  }}
+                  onBlur={handleStartDateBlur}
                 />
               </s-box>
 
@@ -1024,73 +1172,125 @@ export default function CreateExperiment() {
                   onClick={() => setEndCondition("stableSuccessProbability")}>Stable success probability</s-button>
               </s-stack>
             </s-stack>
+            {/*only show end date/time pickers if endCondition is "endDate" */}
+            {endCondition === "endDate" && (
+              <s-stack direction="inline" gap="base">
+                <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
+                  <s-date-field
+                    id="endDateField"
+                    label="End Date"
+                    placeholder="Select end date"
+                    value={endDate}
+                    error={emptyEndDateError || endDateError || (endCondition === "endDate" && (errors.endDate))}
+                    required
+                    onFocus={() => {
+                      setEmptyEndDateError(null);
+                      if (fetcher.data?.errors?.endDate) {
+                          //clear server-side errors by resetting fetcher data
+                          fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, endDate: undefined } };
+                      }
+                    }}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      handleDateChange("end", v);
+                      if (emptyEndDateError && v.trim())
+                        setEmptyEndDateError(null);
+                    }}
+                    onBlur={handleEndDateBlur}
+                  />
+                </s-box>
 
-            <s-stack direction="inline" gap="base">
-              <s-box flex="1" minInlineSize="220px" inlineSize="stretch">
-                <s-date-field
-                  id="endDateField"
-                  label="End Date"
-                  placeholder="Select end date"
-                  value={endDate}
-                  error={endDateError}
-                  required={endCondition === "endDate"} // To be removed, since 'endDate' is only required if endCondition is 'End date'
-                  onChange={(e) => {
-                    //listens and passes picked time to validate
-                    handleDateChange("end", e.target.value);
-                  }}
-                />
-              </s-box>
+                <s-box flex="1" minInlineSize="220px">
+                  <TimeSelect
+                    id="endTimeSelect"
+                    label="End Time"
+                    value={endTime}
+                    onChange={handleEndTimeChange}
+                    error={endTimeError}
+                  />
+                </s-box>
+              </s-stack>
+            )}
 
-              <s-box flex="1" minInlineSize="220px">
-                <TimeSelect
-                  id="endTimeSelect"
-                  label="End Time"
-                  value={endTime}
-                  onChange={handleEndTimeChange}
-                  error={endTimeError}
-                />
-              </s-box>
-            </s-stack>
-
-            <s-stack direction="inline" gap="base">
-              <s-stack flex="1" direction="inline" gap="base" alignItems="start">
-                <s-stack inlineSize="250px">
-                  <s-number-field 
-                    label="Probability to be the best greater than" 
-                    suffix="%" 
-                    inputMode="numeric"
-                    min="50"
-                    max="100"
-                    step="1"
-                    value={probabilityToBeBest}
-                    error={probabilityToBeBestError}
-                    onChange={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
-                    onInput={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}
-                    onFocus={(e) => {handleProbabilityOfBestChange("probabilityToBeBest", e.target.value);}}/>
-                </s-stack>
-                <s-stack inlineSize="100px">
-                  <s-number-field 
-                    label="For at least"
-                    inputMode="numeric"
-                    min="1"
-                    value={duration}
-                    error={durationError}
-                    onChange={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
-                    onInput={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}
-                    onFocus={(e) => {handleProbabilityOfBestChange("duration", e.target.value);}}/>
-                </s-stack>
-                <s-stack inlineSize="90px" paddingBlockStart="base">
-                  <s-select
-                    error={timeUnitError}
-                    value={timeUnit}
-                    onChange={(e) => {setTimeUnit(e.target.value);}}>
-                    <s-option value="days">Days</s-option>
-                    <s-option value="weeks">Weeks</s-option>
-                    <s-option value="months">Months</s-option>
-                  </s-select>
+            {/*only show stable success probability fields if endCondition is "stableSuccessProbability" */}
+            {endCondition === "stableSuccessProbability" && (
+              <s-stack direction="inline" gap="base">
+                <s-stack flex="1" direction="inline" gap="base" alignItems="start">
+                  <s-stack inlineSize="250px">
+                    <s-number-field 
+                      label="Probability to be the best greater than" 
+                      suffix="%" 
+                      inputMode="numeric"
+                      min="51"
+                      max="100"
+                      step="1"
+                      value={probabilityToBeBest}
+                      required
+                      error={probabilityToBeBestError || (endCondition === "stableSuccessProbability" && errors.probabilityToBeBest)}
+                      onFocus={() => {
+                        setProbabilityToBeBestError(null);
+                        if (fetcher.data?.errors?.probabilityToBeBest) {
+                          //clear server-side errors by resetting fetcher data
+                          fetcher.data = { ...fetcher.data, errors: { ...fetcher.data.errors, probabilityToBeBest: undefined } };
+                        }
+                      }}
+                      onInput={(e) => {
+                        const v = e.target.value;
+                        handleProbabilityOfBestChange("probabilityToBeBest", v);
+                        if (!duration) {
+                          handleProbabilityOfBestChange("duration", "")
+                        }
+                        if (probabilityToBeBestError && v.trim() && !probabilityToBeBestError)
+                          setProbabilityToBeBestError(null);
+                        }}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        handleProbabilityOfBestChange("probabilityToBeBest", v);
+                        if (probabilityToBeBestError && v.trim() && !probabilityToBeBestError)
+                          setProbabilityToBeBestError(null);
+                        }}
+                      onBlur={handleProbabilityToBeBestBlur}  
+                    />
+                  </s-stack>
+                  <s-stack inlineSize="100px">
+                    <s-number-field 
+                      label="For at least"
+                      inputMode="numeric"
+                      min="1"
+                      value={duration}
+                      error={durationError}
+                      required
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        handleProbabilityOfBestChange("duration", v);
+                        if (durationError && v.trim() && !durationError)
+                          setDurationError(null);
+                        }}
+                      onInput={(e) => {
+                        const v = e.target.value;
+                        handleProbabilityOfBestChange("duration", v);
+                        if (durationError && v.trim() && !durationError)
+                          setDurationError(null);
+                        }}
+                      onBlur={handleDurationBlur}
+                    />
+                  </s-stack>
+                  <s-stack inlineSize="90px" paddingBlockStart="base">
+                    <div style={{ marginTop: "-16px" }}>
+                    <s-select
+                      label="Time Unit"
+                      error={timeUnitError}
+                      value={timeUnit}
+                      onChange={(e) => {setTimeUnit(e.target.value);}}>
+                      <s-option value="days">Days</s-option>
+                      <s-option value="weeks">Weeks</s-option>
+                      <s-option value="months">Months</s-option>
+                    </s-select>
+                    </div>
+                  </s-stack>
                 </s-stack>
               </s-stack>
-            </s-stack>
+            )}
 
           </s-stack>
         </s-form>

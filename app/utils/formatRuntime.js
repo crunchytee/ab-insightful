@@ -1,13 +1,13 @@
 export function formatRuntime(startDateISO, endDateISO, status) {
     
     // Handles non-started experiments
-    if (status === "draft" || status === "scheduled" || !startDateISO) return "-";
+    if (status.toLowerCase() === "draft" || status.toLowerCase() === "scheduled" || !startDateISO) return "-";
 
     const startDate = new Date(startDateISO);
     let endDate;
 
-    if (status === "running") endDate = new Date(); // currently running experiment
-    else if (status === "completed" && endDateISO) endDate = new Date(endDateISO); // completed experiment
+    if (status.toLowerCase() === "active") endDate = new Date(); // currently running experiment
+    else if (status.toLowerCase() === "completed" && endDateISO) endDate = new Date(endDateISO); // completed experiment
     else return "-"; // for any other status, return "-"
     
     // Check for invalid dates
