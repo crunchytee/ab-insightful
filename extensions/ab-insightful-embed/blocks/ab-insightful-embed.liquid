@@ -1,12 +1,4 @@
 {% comment %} This script gets placed in the <head> of the website.  {% endcomment %}
-
-{% comment %} Retrieve app URL from metafields and make available to customer website {% endcomment %}
-{% assign api_url = app.metafields["ab-insightful"].api_url | default: '[]' %}
-<script id="ab-insightful-config" type="application/json">
-  {
-    "api_url": "{{- api_url -}}"
-  }
-</script>
 <script src="{{ 'ab-insightful-embed.js' | asset_url }}" defer="defer"></script>
 
 {% comment %} 

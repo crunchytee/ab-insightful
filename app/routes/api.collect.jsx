@@ -31,16 +31,17 @@ export const action = async ({ request }) => {
 
   const data = await request.json();
   console.log("Event happened:", data);
+  
+  const payload = await handleCollectedEvent(data);
 
-  // Don't await - need to return as possible
-  handleCollectedEvent(data);
-
-  return Response.json(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+  return Response.json(
+    { success: true, ...payload },
+    {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
     },
-  });
+  );
 };

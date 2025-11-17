@@ -1,7 +1,6 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
-// Function for registering the required web pixel
 export async function registerWebPixel({ request }) {
   const { admin, session } = await authenticate.admin(request);
 
@@ -80,7 +79,6 @@ export async function registerWebPixel({ request }) {
   );
 }
 
-// Function for updating web pixel information
 export async function updateWebPixel({ request }) {
   const { admin, session } = await authenticate.admin(request);
 
@@ -159,7 +157,6 @@ export async function updateWebPixel({ request }) {
   );
 }
 
-// Function for getting Web Pixel ID from database
 async function getWebPixelId(session) {
   const currentSession = await db.session.findUnique({
     where: {
@@ -167,71 +164,9 @@ async function getWebPixelId(session) {
     },
   });
   const webPixelId = currentSession?.webPixelId;
-
   if (webPixelId) {
     return webPixelId;
   } else {
     return null;
   }
-}
-
-async function getAppInstallationId({ request }) {
-  // Authenticate first
-  const { admin, session } = await authenticate.admin(request);
-
-  // Next, perform GraphQL query to get App Install ID
-  const response = await admin.graphql(
-    `#graphql
-       query {
-        currentAppInstallation {
-          id
-        }
-      }`,
-  );
-  const responseAsJSON = await response.json();
-
-  return responseAsJSON.data.currentAppInstallation.id;
-}
-
-// Function for updating the app URL metafield. Idempotent - you do not need to create before setting. It will create if not set.
-export async function updateAppUrlMetafield({ request }) {
-  // Authenticate first
-  const { admin, session } = await authenticate.admin(request);
-
-  // Get app installation ID
-  const appInstallationId = await getAppInstallationId({ request });
-
-  // update metafield
-  const appUrl = process.env.SHOPIFY_APP_URL;
-
-  const response = await admin.graphql(
-    `#graphql
-        mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafieldsSetInput) {
-            metafields {
-              id
-              namespace
-              key
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `,
-    {
-      variables: {
-        metafieldsSetInput: [
-          {
-            namespace: "ab-insightful",
-            key: "api_url",
-            type: "single_line_text_field",
-            value: appUrl,
-            ownerId: appInstallationId,
-          },
-        ],
-      },
-    },
-  );
 }
