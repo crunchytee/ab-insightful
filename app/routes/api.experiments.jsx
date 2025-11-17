@@ -1,4 +1,4 @@
-import { getExperimentsList } from "../services/experiment.server";
+import { GetFrontendExperimentsData } from "../services/experiment.server";
 
 export const loader = async ({ request }) => {
   if (request.method === "OPTIONS") {
@@ -23,7 +23,7 @@ export const loader = async ({ request }) => {
       request.headers.get("Access-Control-Request-Method") ?? "GET";
     const request_headers =
       request.headers.get("Access-Control-Request-Headers") ?? "";
-    const experiments = await getExperimentsList();
+    const experiments = await GetFrontendExperimentsData();
 
     if (!experiments) {
       return new Response(
@@ -41,26 +41,16 @@ export const loader = async ({ request }) => {
         },
       );
     }
-    let section_ids = [];
-    for (const experiment of experiments) {
-      section_ids.push(experiment.section_id);
-    }
-    console.log(section_ids);
 
-    return new Response(
-      JSON.stringify({
-        ...section_ids,
-      }),
-      {
-        status: 200,
-        headers: {
-          "Access-Control-Allow-Origin": origin, // or specific domain
-          "Access-Control-Allow-Methods": `${request_method}, OPTIONS`,
-          "Access-Control-Allow-Headers": request_headers || "Content-Type",
-          "Access-Control-Allow-Private-Network": "true",
-        },
+    return new Response(JSON.stringify(experiments), {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": origin, // or specific domain
+        "Access-Control-Allow-Methods": `${request_method}, OPTIONS`,
+        "Access-Control-Allow-Headers": request_headers || "Content-Type",
+        "Access-Control-Allow-Private-Network": "true",
       },
-    );
+    });
   }
   return null;
 };

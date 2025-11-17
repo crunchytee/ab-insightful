@@ -212,6 +212,22 @@ export async function setProbabilityOfBest({
   }
 } //end of setProbabilityOfBest
 
+// Get active experiment ID, Section ID and Probability - used on frontend for showing.
+export async function GetFrontendExperimentsData() {
+  const experiments = await db.experiment.findMany({
+    where: {
+      status: "active",
+    },
+    select: {
+      id: true,
+      sectionId: true,
+      trafficSplit: true,
+    },
+  });
+
+  return experiments;
+}
+
 // Function to get experiments list.
 // This is used for the "Experiments List" page
 export async function getExperimentsList() {
@@ -327,6 +343,55 @@ export function isExperimentActive(experiment, timeCheck = new Date()) {
 
 // Handler function for incoming events
 export async function handleCollectedEvent(payload) {
+  // If the "event" is to update user inclusion, handle that
+  if (payload.event_type === "experiment_include") {
+    // handle that
+    // Create user if they don't exist, otherwise update latest session
+    const user = await db.user.upsert({
+      where: {
+        shopifyCustomerID: payload.user_id,
+      },
+      update: {
+        latestSession: payload.timestamp,
+      },
+      create: {
+        shopifyCustomerID: payload.user_id,
+      },
+    });
+
+    // Then, tie that user to the experiment
+    // First, get the variant ID from the variant name
+    const variant = await getVariant(payload.experiment_id, payload.variant);
+
+    if (!variant) {
+      console.error(
+        `Variant "${payload.variant}" not found for experiment ${payload.experiment_id}`,
+      );
+      return;
+    }
+
+    // Now create or update the allocation
+    const result = await db.allocation.upsert({
+      where: {
+        // The where clause must match the unique constraint: [userId, experimentId]
+        userId_experimentId: {
+          userId: user.id,
+          experimentId: payload.experiment_id,
+        },
+      },
+      create: {
+        // When creating, connect to existing records using their IDs
+        userId: user.id,
+        experimentId: payload.experiment_id,
+        variantId: variant.id,
+      },
+      update: {
+        // If allocation already exists, update the variant (in case it changed)
+        variantId: variant.id,
+      },
+    });
+    return;
+  }
   // normalize time
   let timeCheck = payload.timestamp;
   if (!payload.timestamp) {

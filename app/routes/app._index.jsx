@@ -1,11 +1,11 @@
 //suppress react hydration warnings
 //known issue between polaris web components and React hydration
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   const originalError = console.error;
   console.error = (...args) => {
     if (
-      typeof args[0] === 'string' && 
-      args[0].includes('Extra attributes from the server')
+      typeof args[0] === "string" &&
+      args[0].includes("Extra attributes from the server")
     ) {
       return;
     }
@@ -24,6 +24,12 @@ export const loader = async ({ request }) => {
   await authenticate.admin(request);
   const { updateWebPixel } = await import("../services/extension.server");
   await updateWebPixel({ request });
+
+  // Push app URL to metafield -- Shouldn't be required for production
+  const { updateAppUrlMetafield } = await import(
+    "../services/extension.server"
+  );
+  await updateAppUrlMetafield({ request });
 
   return null;
 };
@@ -77,23 +83,20 @@ export default function Index() {
   return (
     <s-page heading="Welcome to AB Insightful">
       {/* Header Buttons */}
-      <s-button slot="primary-action"
-       variant="primary"
-       href="/app/experiments/new"
-      > 
-      New Experiment
+      <s-button
+        slot="primary-action"
+        variant="primary"
+        href="/app/experiments/new"
+      >
+        New Experiment
       </s-button>
-      <s-button slot="secondary-actions" 
-       href="/app/reports"
-      > 
-      Reports 
+      <s-button slot="secondary-actions" href="/app/reports">
+        Reports
       </s-button>
-      <s-button slot="secondary-actions"
-       href="/app/experiments"
-      > 
-      Manage Experiments 
+      <s-button slot="secondary-actions" href="/app/experiments">
+        Manage Experiments
       </s-button>
-      
+
       {/* Begin Setup guide */}
       {visible.setupGuide && (
         <s-section>
@@ -211,7 +214,7 @@ export default function Index() {
       {/* End Setup guide */}
 
       {/* Begin quick links */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
         <s-clickable
           border="base"
           padding="base"
