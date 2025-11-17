@@ -21,17 +21,75 @@ function initializeApp(appUrl) {
     })
     .then((data) => {
       console.log("[ab-insightful-embed]: list of active experiments: ", data);
-      experiment_ids = data;
-      for (const id in experiment_ids) {
-        let match = document.getElementById(id) ?? "";
-        if (match != "") {
+      data.forEach((experiment) => {
+        const match = document.getElementById(experiment.sectionId);
+        if (match) {
           console.log(
-            `[ab-insightful-embed] Match! ID: ${id} Element: ${match}`,
+            `[ab-insightful-embed] Match! ID: ${experiment.sectionId} Element: ${match}`,
           );
+          invokeExperiment(experiment.id, experiment.trafficSplit, match);
         }
-      }
+      });
     })
     .catch((error) => {
       console.log(error);
     });
+}
+
+// Function to decide whether to activate an experiment for the current client given an active experiment
+function invokeExperiment(id, chanceToShow, element) {
+  // Two cookies - one for experiments involved in control, one for involved in variants
+  // Both are comma separated lists of id's
+  const involvedControlExperiments = getCookie("ab-control-ids");
+  const involvedVariantExperiments = getCookie("ab-variant-ids");
+  // Check if this user is already in the experiment as a control
+  if (involvedControlExperiments) {
+    const expids = involvedControlExperiments.split(",");
+    if (expids.includes(String(id))) {
+      return;
+    }
+  }
+
+  // Check if this user is already in the experiment as a variant
+  if (involvedVariantExperiments) {
+    const expids = involvedVariantExperiments.split(",");
+    if (expids.includes(String(id))) {
+      element.style.display = "none";
+      return;
+    }
+  }
+
+  // Base case: not in control or variant list - add to experiment
+  const chance = Number(chanceToShow);
+  if (Math.random() <= chance) {
+    // Add to variant experiment
+    element.style.display = "none";
+    document.cookie =
+      "ab-variant-ids=" +
+      (involvedVariantExperiments ? involvedVariantExperiments + "," : "") +
+      id +
+      "; path=/";
+  } else {
+    // Add to control group
+    document.cookie =
+      "ab-control-ids=" +
+      (involvedControlExperiments ? involvedControlExperiments + "," : "") +
+      id +
+      "; path=/";
+  }
+}
+
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") {
+      c = c.substring(1, c.length);
+    }
+    if (c.indexOf(nameEQ) === 0) {
+      return c.substring(nameEQ.length, c.length);
+    }
+  }
+  return null;
 }

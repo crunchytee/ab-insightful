@@ -212,6 +212,22 @@ export async function setProbabilityOfBest({
   }
 } //end of setProbabilityOfBest
 
+// Get active experiment ID, Section ID and Probability - used on frontend for showing.
+export async function GetFrontendExperimentsData() {
+  const experiments = await db.experiment.findMany({
+    where: {
+      status: "active",
+    },
+    select: {
+      id: true,
+      sectionId: true,
+      trafficSplit: true,
+    },
+  });
+
+  return experiments;
+}
+
 // Function to get experiments list.
 // This is used for the "Experiments List" page
 export async function getExperimentsList() {
