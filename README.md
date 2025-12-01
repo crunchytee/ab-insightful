@@ -16,47 +16,18 @@ Ab-Insightful helps Shopify merchants analyze customer engagement and customer c
 
 
 ## Project Timeline
-Sprint
-Dates
-Milestone
-Description
-Sprint 1
-10/1-10/12
-Client Discovery & Figma Design
-Assembled a team of developers and found a client for a job. Designed UI. 
-Sprint 2
-10/13 - 10/19
-Initial Epic Planning & Environment Setup
-Creation of initial user stories and development environment for programming
-Sprint 3
-10/22 - 11/02
-Database Testing Environment & Experiment Creation Table
-Created programmatic infrastructure for Seeding and experiment creation page functionality. 
-Sprint 4
-11/06 - 11/16
-Reporting Calculation & Reporting
-Reporting calculation and polish.
-Sprint 5
-02/02-02/15
-Database Integration with Front-end
-Completes frontend display of relevant experiment list & reporting data from the database
-Sprint 6
-02/17-03/01
-Reporting Data graphing and database seeding
-Finalization of Report Graphing. Additional database seeding for depicting graphing
-Sprint 7
-03/03-03/15
-Settings Page & Experiment Distribution to Customers. 
-Completion of Settings page and necessary additional user interaction features. Experiment distribution to customers and associated data tracking completed. 
-Sprint 8
-03/17-03/29
-Bug testing & Stretch Features
-Creation of Unit tests and bug fixes. Add A/B/C Testing.
-Sprint
-9
-03/31-04/12
-Stretch Features, Bug testing
-Additional Unit tests and bug fixes. Creation of Conversion full report.
+| Sprint | Dates         | Milestone                                      | Description                                                                 |
+|--------|---------------|------------------------------------------------|-----------------------------------------------------------------------------|
+| 1      | 10/1–10/12    | Client Discovery & Figma Design                | Assembled a team of developers and found a client for a job. Designed UI.  |
+| 2      | 10/13–10/19   | Initial Epic Planning & Environment Setup      | Creation of initial user stories and development environment for programming |
+| 3      | 10/22–11/02   | Database Testing Environment & Experiment Creation Table | Created programmatic infrastructure for seeding and experiment creation page functionality |
+| 4      | 11/06–11/16   | Reporting Calculation & Reporting              | Reporting calculation and polish.                                           |
+| 5      | 02/02–02/15   | Database Integration with Front-end            | Completes frontend display of relevant experiment list & reporting data from the database |
+| 6      | 02/17–03/01   | Reporting Data Graphing and Database Seeding   | Finalization of report graphing. Additional database seeding for depicting graphing |
+| 7      | 03/03–03/15   | Settings Page & Experiment Distribution        | Completion of Settings page and user interaction features. Experiment distribution to customers and tracking completed. |
+| 8      | 03/17–03/29   | Bug Testing & Stretch Features                 | Creation of unit tests and bug fixes. Add A/B/C testing.                    |
+| 9      | 03/31–04/12   | Stretch Features, Bug Testing                  | Additional unit tests and fixes. Creation of full conversion report.        |
+
 
 Sprint 2 & 3
 ![sprint2N3Image](./docs/images/sprint2N3.png)
@@ -122,11 +93,10 @@ Will further describe how to deploy the project (e.g., using Docker, Shopify App
 
 ## Product Design
 
-![Prototype Screenshot](./docs/images/prototype.png)
 ![Home Page](./docs/images/homePage.png)
 
 ![Create Experiment Page](./docs/images/createExperiment.png)
-![Experiment List Page](./docs/images/experimentList.png)
+![Experiment List Page](./docs/images/experimentsList.png)
 ![Reports Page](./docs/images/reportsPage.png)
 
 
@@ -141,7 +111,7 @@ _The database is capable of storing experiment data, analysis of the experiment,
 | Name     | Role                 | GitHub      |
 | -------- | -------------------- | ----------- |
 | _Benjamin Church_ | _Full Stack / Graphic Designer_ | _@ChurchDuck1_ |
-| _Emmanuel Rodriguez_ | _Full Stack_  | _@HeadlessChickenFajita_ | _ @melRodCSUS_ |
+| _Emmanuel Rodriguez_ | _Full Stack_  | _@HeadlessChickenFajita_ & @melRodCSUS|
 | _Matthew Tagintsev_ | _Full Stack_    | _@tagintsevm_ |
 | _Paul Felker_ | _Full Stack_    | _@pfelker13_ |
 | _Ryan Martinez_ | _Architecture / Backend_    | _@ryanmart25_ |
